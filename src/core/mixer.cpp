@@ -220,6 +220,8 @@ void enable()
 void disable()
 {
 	model::get().mixer.state->active.store(false);
+	while (model::isLocked())
+		;
 	u::log::print("[mixer::disable] disabled\n");
 }
 

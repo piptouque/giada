@@ -182,6 +182,8 @@ for listening to model changes. */
 
 void onSwap(std::function<void(SwapType)> f);
 
+bool isLocked();
+
 /* -------------------------------------------------------------------------- */
 
 /* Model utilities */

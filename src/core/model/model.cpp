@@ -153,6 +153,13 @@ void onSwap(std::function<void(SwapType)> f)
 
 /* -------------------------------------------------------------------------- */
 
+bool isLocked()
+{
+	return layout.isLocked();
+}
+
+/* -------------------------------------------------------------------------- */
+
 template <typename T>
 T& getAll()
 {
