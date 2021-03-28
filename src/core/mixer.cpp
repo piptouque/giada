@@ -26,7 +26,6 @@
 
 #include "core/mixer.h"
 #include "core/audioBuffer.h"
-#include "core/clock.h"
 #include "core/const.h"
 #include "core/model/model.h"
 #include "core/sequencer.h"
@@ -246,15 +245,10 @@ const AudioBuffer& getRecBuffer()
 
 int render(AudioBuffer& out, const AudioBuffer& in, const Info& info)
 {
-	model::Lock         rtLock = model::get_RT();
+	const model::Lock   rtLock = model::get_RT();
 	const model::Mixer& mixer  = rtLock.get().mixer;
 
 	inBuffer_.clear();
-
-#ifdef WITH_AUDIO_JACK
-	if (info.shouldSyncJack)
-		clock::recvJackSync();
-#endif
 
 	/* Reset peak computation. */
 

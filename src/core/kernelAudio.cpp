@@ -85,6 +85,11 @@ int callback_(void* outBuf, void* inBuf, unsigned bufferSize, double /*streamTim
 	if (!canRender_())
 		return 0;
 
+#ifdef WITH_AUDIO_JACK
+	if (getAPI() == G_SYS_API_JACK)
+		clock::recvJackSync();
+#endif
+
 	mixer::Info info;
 	info.isAudioReady    = model::get().kernel.audioReady;
 	info.hasInput        = isInputEnabled();
@@ -97,9 +102,6 @@ int callback_(void* outBuf, void* inBuf, unsigned bufferSize, double /*streamTim
 	info.outVol          = mh::getOutVol();
 	info.inVol           = mh::getInVol();
 	info.recTriggerLevel = conf::conf.recTriggerLevel;
-#ifdef WITH_AUDIO_JACK
-	info.shouldSyncJack = getAPI() == G_SYS_API_JACK;
-#endif
 
 	return mixer::render(out, in, info);
 }

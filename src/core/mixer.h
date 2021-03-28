@@ -63,9 +63,6 @@ struct Info
 	float outVol;
 	float inVol;
 	float recTriggerLevel;
-#ifdef WITH_AUDIO_JACK
-	bool shouldSyncJack;
-#endif
 };
 
 void init(Frame framesInLoop, Frame framesInBuffer);
