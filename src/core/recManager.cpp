@@ -38,14 +38,22 @@
 #include "core/types.h"
 #include "gui/dispatcher.h"
 
-namespace giada
-{
-namespace m
-{
-namespace recManager
+namespace giada::m::recManager
 {
 namespace
 {
+bool canRec_()
+{
+	return kernelAudio::isReady();
+}
+
+bool canInputRec_()
+{
+	return canRec_() && mh::hasInputRecordableChannels();
+}
+
+/* -------------------------------------------------------------------------- */
+
 void setRecordingAction_(bool v)
 {
 	model::get().recorder.isRecordingAction = v;
@@ -62,8 +70,6 @@ void setRecordingInput_(bool v)
 
 bool startActionRec_()
 {
-	if (!kernelAudio::isReady())
-		return false;
 	clock::setStatus(ClockStatus::RUNNING);
 	sequencer::start();
 	m::conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
@@ -72,14 +78,12 @@ bool startActionRec_()
 
 /* -------------------------------------------------------------------------- */
 
-bool startInputRec_()
+void startInputRec_(InputRecMode mode)
 {
-	if (!kernelAudio::isReady() || !mh::hasInputRecordableChannels())
-		return false;
-	mixer::startInputRec();
+	/* Start recording from the current frame, not the beginning. */
+	mixer::startInputRec(clock::getCurrentFrame());
 	sequencer::start();
 	m::conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
-	return true;
 }
 } // namespace
 
@@ -106,10 +110,13 @@ bool isRecordingInput()
 
 void startActionRec(RecTriggerMode mode)
 {
+	if (!canRec_())
+		return;
+
 	if (mode == RecTriggerMode::NORMAL)
 	{
-		if (startActionRec_())
-			setRecordingAction_(true);
+		startActionRec_();
+		setRecordingAction_(true);
 	}
 	else
 	{ // RecTriggerMode::SIGNAL
@@ -163,27 +170,31 @@ void toggleActionRec(RecTriggerMode m)
 
 /* -------------------------------------------------------------------------- */
 
-bool startInputRec(RecTriggerMode mode)
+bool startInputRec(RecTriggerMode triggerMode, InputRecMode inputMode)
 {
-	if (mode == RecTriggerMode::NORMAL)
+	if (!canInputRec_())
+		return false;
+
+	if (triggerMode == RecTriggerMode::SIGNAL || inputMode == InputRecMode::FREE)
+	{
+		clock::setStatus(ClockStatus::WAITING);
+		clock::rewind();
+	}
+
+	if (triggerMode == RecTriggerMode::NORMAL)
 	{
 		G_DEBUG("Start input rec, NORMAL mode");
-		if (!startInputRec_())
-			return false;
+		startInputRec_(inputMode);
 		setRecordingInput_(true);
-		return true;
 	}
 	else
 	{
 		G_DEBUG("Start input rec, SIGNAL mode");
-		if (!mh::hasInputRecordableChannels())
-			return false;
-		clock::setStatus(ClockStatus::WAITING);
-		clock::rewind();
-		mixer::setSignalCallback(startInputRec_);
+		mixer::setSignalCallback([inputMode] { startInputRec_(inputMode); });
 		setRecordingInput_(true);
-		return true;
 	}
+
+	return true;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -208,15 +219,13 @@ void stopInputRec()
 
 /* -------------------------------------------------------------------------- */
 
-bool toggleInputRec(RecTriggerMode m)
+bool toggleInputRec(RecTriggerMode m, InputRecMode i)
 {
 	if (isRecordingInput())
 	{
 		stopInputRec();
 		return true;
 	}
-	return startInputRec(m);
+	return startInputRec(m, i);
 }
-} // namespace recManager
-} // namespace m
-} // namespace giada
+} // namespace giada::m::recManager

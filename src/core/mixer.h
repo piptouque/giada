@@ -50,7 +50,7 @@ constexpr int MASTER_OUT_CHANNEL_ID = 1;
 constexpr int MASTER_IN_CHANNEL_ID  = 2;
 constexpr int PREVIEW_CHANNEL_ID    = 3;
 
-void init(Frame framesInSeq, Frame framesInBuffer);
+void init(Frame framesInLoop, Frame framesInBuffer);
 
 /* enable, disable
 Toggles master callback processing. Useful when loading a new patch. Mixer
@@ -84,9 +84,9 @@ int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize, double streamTime
     RtAudioStreamStatus status, void* userData);
 
 /* startInputRec, stopInputRec
-Starts/stops input recording on frame clock::getCurrentFrame(). */
+Starts/stops input recording on frame 'from'. */
 
-void startInputRec();
+void startInputRec(Frame from);
 void stopInputRec();
 
 void setSignalCallback(std::function<void()> f);

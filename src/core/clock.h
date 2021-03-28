@@ -66,6 +66,12 @@ int         getQuantizerValue();
 int         getQuantizerStep();
 ClockStatus getStatus();
 
+/* getMaxFramesInLoop
+Returns how many frames the current loop length might contain at the slowest
+speed possible (G_MIN_BPM). Call this whenever you change the number or beats. */
+
+Frame getMaxFramesInLoop();
+
 /* advance
 Increases current frame by a specific amount. */
 

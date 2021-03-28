@@ -74,7 +74,6 @@ void setBpm_(float current, std::string s)
 	float previous = m::clock::getBpm();
 	m::clock::setBpm(current);
 	m::recorderHandler::updateBpm(previous, current, m::clock::getQuantizerStep());
-	m::mixer::allocRecBuffer(m::clock::getFramesInLoop());
 
 	/* This function might get called by Jack callback BEFORE the UI is up
 	and running, that is when G_MainWin == nullptr. */
@@ -199,7 +198,7 @@ void setBeats(int beats, int bars)
 		return;
 
 	m::clock::setBeats(beats, bars);
-	m::mixer::allocRecBuffer(m::clock::getFramesInLoop());
+	m::mixer::allocRecBuffer(m::clock::getMaxFramesInLoop());
 
 	G_MainWin->mainTimer->setMeter(m::clock::getBeats(), m::clock::getBars());
 	u::gui::refreshActionEditor(); // in case the action editor is open

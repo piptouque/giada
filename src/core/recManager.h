@@ -29,25 +29,19 @@
 
 #include "core/types.h"
 
-namespace giada
-{
-namespace m
-{
-namespace recManager
+namespace giada::m::recManager
 {
 bool isRecording();
 bool isRecordingAction();
 bool isRecordingInput();
 
-void startActionRec(RecTriggerMode m);
+void startActionRec(RecTriggerMode);
 void stopActionRec();
-void toggleActionRec(RecTriggerMode m);
+void toggleActionRec(RecTriggerMode);
 
-bool startInputRec(RecTriggerMode m);
+bool startInputRec(RecTriggerMode, InputRecMode);
 void stopInputRec();
-bool toggleInputRec(RecTriggerMode m);
-} // namespace recManager
-} // namespace m
-} // namespace giada
+bool toggleInputRec(RecTriggerMode, InputRecMode);
+} // namespace giada::m::recManager
 
 #endif

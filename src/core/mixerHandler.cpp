@@ -168,7 +168,7 @@ void overdubChannel_(channel::Data& ch)
 
 void init()
 {
-	mixer::init(clock::getFramesInLoop(), kernelAudio::getRealBufSize());
+	mixer::init(clock::getMaxFramesInLoop(), kernelAudio::getRealBufSize());
 
 	model::get().channels.clear();
 

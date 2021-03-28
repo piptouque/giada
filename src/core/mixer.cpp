@@ -99,12 +99,12 @@ Records from line in. */
 
 void lineInRec_(const AudioBuffer& inBuf)
 {
-	float inVol        = mh::getInVol();
-	int   framesInLoop = clock::getFramesInLoop();
+	float inVol     = mh::getInVol();
+	int   maxFrames = clock::getFramesInLoop();
 
 	for (int i = 0; i < inBuf.countFrames(); i++, inputTracker_++)
 		for (int j = 0; j < inBuf.countChannels(); j++)
-			recBuffer_[inputTracker_ % framesInLoop][j] += inBuf[i][j] * inVol; // adding: overdub!
+			recBuffer_[inputTracker_ % maxFrames][j] += inBuf[i][j] * inVol; // adding: overdub!
 }
 
 /* -------------------------------------------------------------------------- */
@@ -231,16 +231,16 @@ void finalizeOutput_(const model::Mixer& mixer, AudioBuffer& outBuf)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-void init(Frame framesInSeq, Frame framesInBuffer)
+void init(Frame maxFramesInLoop, Frame framesInBuffer)
 {
-	/* Allocate virtual inputs. recBuffer_ has variable size: it depends
-	on how many frames there are in sequencer. */
+	/* Allocate working buffers. recBuffer_ has variable size: it depends on how
+	many frames there are in the current loop. */
 
-	recBuffer_.alloc(framesInSeq, G_MAX_IO_CHANS);
+	recBuffer_.alloc(maxFramesInLoop, G_MAX_IO_CHANS);
 	inBuffer_.alloc(framesInBuffer, G_MAX_IO_CHANS);
 
-	u::log::print("[mixer::init] buffers ready - framesInSeq=%d, framesInBuffer=%d\n",
-	    framesInSeq, framesInBuffer);
+	u::log::print("[mixer::init] buffers ready - maxFramesInLoop=%d, framesInBuffer=%d\n",
+	    maxFramesInLoop, framesInBuffer);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -350,10 +350,9 @@ int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize,
 
 /* -------------------------------------------------------------------------- */
 
-void startInputRec()
+void startInputRec(Frame from)
 {
-	/* Start inputTracker_ from the current frame, not the beginning. */
-	inputTracker_ = clock::getCurrentFrame();
+	inputTracker_ = from;
 }
 
 void stopInputRec()
