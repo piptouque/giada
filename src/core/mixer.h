@@ -50,12 +50,28 @@ constexpr int MASTER_OUT_CHANNEL_ID = 1;
 constexpr int MASTER_IN_CHANNEL_ID  = 2;
 constexpr int PREVIEW_CHANNEL_ID    = 3;
 
+struct Info
+{
+	bool  isAudioReady;
+	bool  hasInput;
+	bool  isClockActive;
+	bool  isClockRunning;
+	bool  canLineInRec;
+	bool  limitOutput;
+	bool  inToOut;
+	Frame framesInLoop;
+	float outVol;
+	float inVol;
+	float recTriggerLevel;
+#ifdef WITH_AUDIO_JACK
+	bool shouldSyncJack;
+#endif
+};
+
 void init(Frame framesInLoop, Frame framesInBuffer);
 
 /* enable, disable
-Toggles master callback processing. Useful when loading a new patch. Mixer
-will flush itself to wait for a processing cycle to finish when disable() is
-called. */
+Toggles master callback processing. Useful when loading a new patch. */
 
 void enable();
 void disable();
@@ -77,11 +93,10 @@ merge data into channel after an input recording session. */
 
 const AudioBuffer& getRecBuffer();
 
-/* masterPlay
-Core method (callback) */
+/* render
+Core rendering function. */
 
-int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize, double streamTime,
-    RtAudioStreamStatus status, void* userData);
+int render(AudioBuffer& out, const AudioBuffer& in, const Info& info);
 
 /* startInputRec, stopInputRec
 Starts/stops input recording on frame 'from'. */
