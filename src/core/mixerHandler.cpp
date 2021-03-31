@@ -367,10 +367,6 @@ bool getInToOut()
 
 /* -------------------------------------------------------------------------- */
 
-/* Push a new Wave into each recordable channel. Warning: this algorithm will 
-require some changes when we will allow overdubbing (the previous existing Wave
-has to be overwritten somehow). */
-
 void finalizeInputRec()
 {
 	for (channel::Data* ch : getRecordableChannels_())
