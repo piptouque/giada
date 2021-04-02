@@ -251,7 +251,7 @@ void toggleActionRecording()
 
 void toggleInputRecording()
 {
-	m::recManager::toggleInputRec(m::conf::conf.recTriggerMode, InputRecMode::RIGID/*TODO*/);
+	m::recManager::toggleInputRec(m::conf::conf.recTriggerMode, m::conf::conf.inputRecMode);
 }
 
 /* -------------------------------------------------------------------------- */

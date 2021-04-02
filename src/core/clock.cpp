@@ -423,4 +423,11 @@ Frame getMaxFramesInLoop()
 {
 	return (conf::conf.samplerate * (60.0f / G_MIN_BPM)) * getBeats();
 }
+
+/* -------------------------------------------------------------------------- */
+
+float calcBpmFromRec(Frame recordedFrames)
+{
+	return (60.0f * getBeats()) / (recordedFrames / static_cast<float>(conf::conf.samplerate));
+}
 } // namespace giada::m::clock

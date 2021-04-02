@@ -98,7 +98,7 @@ int callback_(void* outBuf, void* inBuf, unsigned bufferSize, double /*streamTim
 	info.canLineInRec    = recManager::isRecordingInput() && isInputEnabled();
 	info.limitOutput     = conf::conf.limitOutput;
 	info.inToOut         = mh::getInToOut();
-	info.framesInLoop    = clock::getFramesInLoop();
+	info.maxFramesToRec  = conf::conf.inputRecMode == InputRecMode::FREE ? clock::getMaxFramesInLoop() : clock::getFramesInLoop();
 	info.outVol          = mh::getOutVol();
 	info.inVol           = mh::getInVol();
 	info.recTriggerLevel = conf::conf.recTriggerLevel;

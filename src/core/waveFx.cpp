@@ -177,7 +177,7 @@ void paste(const Wave& src, Wave& des, Frame a)
 	newData.alloc(src.getSize() + des.getSize(), des.getChannels());
 
 	/* |---original data---|///paste data///|---original data---|
-				des[0, a)      src[0, src.size)   des[a, des.size)	*/
+	         des[0, a)      src[0, src.size)   des[a, des.size)	*/
 
 	newData.copyData(des[0], a, 0);
 	newData.copyData(src[0], src.getSize(), a);

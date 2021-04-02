@@ -40,7 +40,7 @@ void stopActionRec();
 void toggleActionRec(RecTriggerMode);
 
 bool startInputRec(RecTriggerMode, InputRecMode);
-void stopInputRec();
+void stopInputRec(InputRecMode);
 bool toggleInputRec(RecTriggerMode, InputRecMode);
 } // namespace giada::m::recManager
 

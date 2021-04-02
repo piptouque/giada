@@ -167,7 +167,10 @@ void AudioBuffer::free()
 void AudioBuffer::copyData(const float* data, Frame frames, int channels, int offset)
 {
 	assert(m_data != nullptr);
-	assert(frames <= m_size - offset);
+	assert(offset < m_size);
+
+	/* Make sure the amount of frames lies within the current buffer size. */
+	frames = std::min(frames, m_size - offset);
 
 	if (channels < NUM_CHANS) // i.e. one channel, mono
 		for (int i = offset, k = 0; i < m_size; i++, k++)
@@ -179,9 +182,9 @@ void AudioBuffer::copyData(const float* data, Frame frames, int channels, int of
 		assert(false);
 }
 
-void AudioBuffer::copyData(const AudioBuffer& b, float gain)
+void AudioBuffer::copyData(const AudioBuffer& b, float gain, Frame frames)
 {
-	copyData(b[0], b.countFrames(), b.countChannels());
+	copyData(b[0], frames != -1 ? frames : b.countFrames(), b.countChannels());
 	if (gain != 1.0f)
 		applyGain(gain);
 }

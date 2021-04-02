@@ -75,7 +75,9 @@ void invokeSignalCb_()
 /* -------------------------------------------------------------------------- */
 
 /* lineInRec
-Records from line in. */
+Records from line in. 'maxFrames' determines how many frames to record before
+the internal tracker loops over. The value changes whether you are recording
+in RIGID or FREE mode. */
 
 void lineInRec_(const AudioBuffer& inBuf, Frame maxFrames, float inVol)
 {
@@ -269,7 +271,7 @@ int render(AudioBuffer& out, const AudioBuffer& in, const Info& info)
 	if (info.isClockActive)
 	{
 		if (info.canLineInRec)
-			lineInRec_(in, info.framesInLoop, info.inVol);
+			lineInRec_(in, info.maxFramesToRec, info.inVol);
 		if (info.isClockRunning)
 			processSequencer_(rtLock.get(), out, inBuffer_);
 	}
@@ -299,9 +301,11 @@ void startInputRec(Frame from)
 	inputTracker_ = from;
 }
 
-void stopInputRec()
+Frame stopInputRec()
 {
+	Frame ret     = inputTracker_;
 	inputTracker_ = 0;
+	return ret;
 }
 
 /* -------------------------------------------------------------------------- */

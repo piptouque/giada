@@ -120,11 +120,12 @@ public:
 	void copyData(const float* data, Frame frames, int channels = NUM_CHANS, int offset = 0);
 
 	/* copyData (2)
-	Copies buffer 'b' onto this one. If 'b' has less channels than this one,
-	they will be spread over the current ones. Buffer 'b' MUST NOT contain more
+	Copies 'frames' frames of buffer 'b' onto this one. If 'frames' == -1 the
+	whole buffer will be copied. If 'b' has less channels than this one, they 
+	will be spread over the current ones. Buffer 'b' MUST NOT contain more 
 	channels than this one.  */
 
-	void copyData(const AudioBuffer& b, float gain = 1.0f);
+	void copyData(const AudioBuffer& b, float gain = 1.0f, Frame frames = -1);
 
 	/* addData
 	Merges audio data from buffer 'b' onto this one. Applies optional gain and

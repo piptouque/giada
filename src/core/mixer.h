@@ -59,7 +59,7 @@ struct Info
 	bool  canLineInRec;
 	bool  limitOutput;
 	bool  inToOut;
-	Frame framesInLoop;
+	Frame maxFramesToRec;
 	float outVol;
 	float inVol;
 	float recTriggerLevel;
@@ -68,14 +68,13 @@ struct Info
 void init(Frame framesInLoop, Frame framesInBuffer);
 
 /* enable, disable
-Toggles master callback processing. Useful when loading a new patch. */
+Toggles master callback processing. Useful to suspend the rendering. */
 
 void enable();
 void disable();
 
 /* allocRecBuffer
-Allocates new memory for the virtual input channel. Call this whenever you 
-shrink or resize the sequencer. */
+Allocates new memory for the virtual input channel. */
 
 void allocRecBuffer(Frame frames);
 
@@ -96,10 +95,11 @@ Core rendering function. */
 int render(AudioBuffer& out, const AudioBuffer& in, const Info& info);
 
 /* startInputRec, stopInputRec
-Starts/stops input recording on frame 'from'. */
+Starts/stops input recording on frame 'from'. The latter returns the number of
+recorded frames. */
 
-void startInputRec(Frame from);
-void stopInputRec();
+void  startInputRec(Frame from);
+Frame stopInputRec();
 
 void setSignalCallback(std::function<void()> f);
 bool isChannelAudible(const channel::Data& c);

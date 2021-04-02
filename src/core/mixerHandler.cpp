@@ -121,16 +121,19 @@ void setupChannelPostRecording_(channel::Data& ch)
 /* recordChannel_
 Records the current Mixer audio input data into an empty channel. */
 
-void recordChannel_(channel::Data& ch)
+void recordChannel_(channel::Data& ch, Frame recordedFrames)
 {
-	/* Create a new Wave with audio coming from Mixer's virtual input. */
+	/* Create a new Wave with audio coming from Mixer's input buffer. */
 
-	std::string filename = "TAKE-" + std::to_string(patch::patch.lastTakeId++) + ".wav";
+	std::string           filename = "TAKE-" + std::to_string(patch::patch.lastTakeId++) + ".wav";
+	std::unique_ptr<Wave> wave     = waveManager::createEmpty(recordedFrames, G_MAX_IO_CHANS,
+        conf::conf.samplerate, filename);
 
-	std::unique_ptr<Wave> wave = waveManager::createEmpty(clock::getFramesInLoop(),
-	    G_MAX_IO_CHANS, conf::conf.samplerate, filename);
+	G_DEBUG("Created new Wave, size=" << wave->getSize());
 
-	wave->copyData(mixer::getRecBuffer());
+	/* Copy up to wave.getSize() from the mixer's input buffer into wave's. */
+
+	wave->copyData(mixer::getRecBuffer(), /*gain=*/1.0f, wave->getSize());
 
 	/* Update channel with the new Wave. */
 
@@ -367,10 +370,10 @@ bool getInToOut()
 
 /* -------------------------------------------------------------------------- */
 
-void finalizeInputRec()
+void finalizeInputRec(Frame recordedFrames)
 {
 	for (channel::Data* ch : getRecordableChannels_())
-		recordChannel_(*ch);
+		recordChannel_(*ch, recordedFrames);
 	for (channel::Data* ch : getOverdubbableChannels_())
 		overdubChannel_(*ch);
 

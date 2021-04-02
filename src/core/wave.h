@@ -55,7 +55,7 @@ public:
 	int         getChannels() const;
 	std::string getPath() const;
 	int         getBits() const;
-	int         getSize() const; // in frames
+	Frame       getSize() const;
 	int         getDuration() const;
 	bool        isLogical() const;
 	bool        isEdited() const;
@@ -75,23 +75,26 @@ public:
 
 	void replaceData(AudioBuffer&& b);
 
-	/* copyData
-	Copies 'frames' frames from the new 'data' into m_data, starting from frame 
-	'offset'. */
+	/* copyData (1)
+	See AudioBuffer::copyData (1). */
 
-	void copyData(const float* data, int frames, int channels, int offset = 0);
-	void copyData(const AudioBuffer& b);
+	void copyData(const float* data, Frame frames, int channels, Frame offset = 0);
+
+	/* copyData (2)
+	See AudioBuffer::copyData (2). */
+
+	void copyData(const AudioBuffer& b, float gain = 1.0f, Frame frames = -1);
 
 	/* addData
 	Merges audio data from buffer 'b' onto this one. */
 
 	void addData(const AudioBuffer& b);
 
-	void alloc(int size, int channels, int rate, int bits, const std::string& path);
+	void alloc(Frame size, int channels, int rate, int bits, const std::string& path);
 
 	ID id;
 
-  private:
+private:
 	AudioBuffer m_buffer;
 	int         m_rate;
 	int         m_bits;

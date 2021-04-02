@@ -78,7 +78,7 @@ bool startActionRec_()
 
 /* -------------------------------------------------------------------------- */
 
-void startInputRec_(InputRecMode mode)
+void startInputRec_()
 {
 	/* Start recording from the current frame, not the beginning. */
 	mixer::startInputRec(clock::getCurrentFrame());
@@ -176,34 +176,37 @@ bool startInputRec(RecTriggerMode triggerMode, InputRecMode inputMode)
 		return false;
 
 	if (triggerMode == RecTriggerMode::SIGNAL || inputMode == InputRecMode::FREE)
-	{
-		clock::setStatus(ClockStatus::WAITING);
 		clock::rewind();
-	}
 
 	if (triggerMode == RecTriggerMode::NORMAL)
 	{
+		startInputRec_();
 		G_DEBUG("Start input rec, NORMAL mode");
-		startInputRec_(inputMode);
-		setRecordingInput_(true);
 	}
 	else
 	{
+		clock::setStatus(ClockStatus::WAITING);
+		mixer::setSignalCallback([inputMode] { startInputRec_(); });
 		G_DEBUG("Start input rec, SIGNAL mode");
-		mixer::setSignalCallback([inputMode] { startInputRec_(inputMode); });
-		setRecordingInput_(true);
 	}
 
+	setRecordingInput_(true);
 	return true;
 }
 
 /* -------------------------------------------------------------------------- */
 
-void stopInputRec()
+void stopInputRec(InputRecMode recMode)
 {
 	setRecordingInput_(false);
 
-	mixer::stopInputRec();
+	Frame recordedFrames = mixer::stopInputRec();
+
+	/* When recording in RIGID mode the recorded frames are always the current
+	loop length. */
+
+	if (recMode == InputRecMode::RIGID)
+		recordedFrames = clock::getFramesInLoop();
 
 	/* If you stop the Input Recorder in SIGNAL mode before any actual 
 	recording: just clean up everything and return. */
@@ -212,9 +215,18 @@ void stopInputRec()
 	{
 		clock::setStatus(ClockStatus::STOPPED);
 		mixer::setSignalCallback(nullptr);
+		return;
 	}
-	else
-		mh::finalizeInputRec();
+
+	/* Finalize recordings. InputRecMode::FREE requires some adjustments. */
+
+	mh::finalizeInputRec(recordedFrames);
+
+	if (recMode == InputRecMode::FREE)
+	{
+		clock::rewind();
+		clock::setBpm(clock::calcBpmFromRec(recordedFrames));
+	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -223,7 +235,7 @@ bool toggleInputRec(RecTriggerMode m, InputRecMode i)
 {
 	if (isRecordingInput())
 	{
-		stopInputRec();
+		stopInputRec(i);
 		return true;
 	}
 	return startInputRec(m, i);
