@@ -26,12 +26,8 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "beatMeter.h"
-#include "core/clock.h"
+#include "sequencer.h"
 #include "core/const.h"
-#include "core/mixer.h"
-#include "core/recManager.h"
-#include "utils/gui.h"
 #include <FL/fl_draw.H>
 
 namespace giada::v
@@ -44,17 +40,9 @@ geSequencer::geSequencer(int x, int y, int w, int h)
 
 /* -------------------------------------------------------------------------- */
 
-Fl_Color geSequencer::getCursorColor()
-{
-	if (m::clock::getStatus() == ClockStatus::WAITING && u::gui::shouldBlink())
-		return FL_BACKGROUND_COLOR;
-	return G_COLOR_LIGHT_1;
-}
-
-/* -------------------------------------------------------------------------- */
-
 void geSequencer::refresh()
 {
+	m_data = c::main::getSequencer();
 	redraw();
 }
 
@@ -62,35 +50,55 @@ void geSequencer::refresh()
 
 void geSequencer::draw()
 {
-	using namespace giada::m;
-
-	int cursorW = w() / G_MAX_BEATS;
-	int greyX   = clock::getBeats() * cursorW;
+	const int cursorW = w() / G_MAX_BEATS;
 
 	/* Border and background. */
 
+	fl_rectf(x(), y(), w(), h(), FL_BACKGROUND_COLOR);
 	fl_rect(x(), y(), w(), h(), G_COLOR_GREY_4);
-	fl_rectf(x() + 1, y() + 1, w() - 2, h() - 2, FL_BACKGROUND_COLOR);
-
-	/* Cursor. */
-
-	fl_rectf(x() + (clock::getCurrentBeat() * cursorW) + 3, y() + 3, cursorW - 5, h() - 6, getCursorColor());
 
 	/* Beat cells. */
 
 	fl_color(G_COLOR_GREY_4);
-	for (int i = 1; i <= clock::getBeats(); i++)
-		fl_line(x() + cursorW * i, y() + 1, x() + cursorW * i, y() + h() - 2);
+	for (int i = 1; i <= m_data.beats; i++)
+		fl_line(x() + cursorW * i, y(), x() + cursorW * i, y() + h() - 2);
 
 	/* Bar line. */
 
 	fl_color(G_COLOR_LIGHT_1);
-	int delta = clock::getBeats() / clock::getBars();
-	for (int i = 1; i < clock::getBars(); i++)
+	const int delta = m_data.beats / m_data.bars;
+	for (int i = 1; i < m_data.bars; i++)
 		fl_line(x() + cursorW * (i * delta), y() + 1, x() + cursorW * (i * delta), y() + h() - 2);
 
 	/* Unused grey area. */
 
-	fl_rectf(x() + greyX + 1, y() + 1, w() - greyX - 1, h() - 2, G_COLOR_GREY_4);
+	const int greyX = m_data.beats * cursorW;
+	fl_rectf(x() + greyX, y(), w() - greyX, h(), G_COLOR_GREY_4);
+
+	/* Cursor. */
+
+	paintCursor(cursorW);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void geSequencer::paintCursor(int position, int width, Fl_Color color) const
+{
+	fl_rectf(x() + (position * width) + 3, y() + 3, width - 5, h() - 6, color);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void geSequencer::paintCursor(int width) const
+{
+	Fl_Color color = m_data.shouldBlink ? FL_BACKGROUND_COLOR : G_COLOR_LIGHT_1;
+
+	if (m_data.isFreeModeInputRec)
+	{
+		for (int i = 0; i < m_data.beats; i++)
+			paintCursor(i, width, color);
+	}
+	else
+		paintCursor(m_data.currentBeat, width, color);
 }
 } // namespace giada::v

@@ -149,6 +149,21 @@ IO getIO()
 
 /* -------------------------------------------------------------------------- */
 
+Sequencer getSequencer()
+{
+	Sequencer out;
+
+	out.isFreeModeInputRec = m::recManager::isRecordingInput() && m::conf::conf.inputRecMode == InputRecMode::FREE;
+	out.shouldBlink        = u::gui::shouldBlink() && (m::clock::getStatus() == ClockStatus::WAITING || out.isFreeModeInputRec),
+	out.beats              = m::clock::getBeats(),
+	out.bars               = m::clock::getBars(),
+	out.currentBeat        = m::clock::getCurrentBeat();
+
+	return out;
+}
+
+/* -------------------------------------------------------------------------- */
+
 void setBpm(const char* v1, const char* v2)
 {
 	/* Never change this stuff while recording audio. */
@@ -250,6 +265,15 @@ void toggleRecOnSignal()
 	if (m::conf::conf.recTriggerMode == RecTriggerMode::NORMAL && m::clock::isRunning())
 		return;
 	m::conf::conf.recTriggerMode = m::conf::conf.recTriggerMode == RecTriggerMode::NORMAL ? RecTriggerMode::SIGNAL : RecTriggerMode::NORMAL;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void toggleFreeInputRec()
+{
+	/* TODO - can't change from RIGID to FREE if there's already a filled sample
+	channel in the project */
+	m::conf::conf.inputRecMode = m::conf::conf.inputRecMode == InputRecMode::FREE ? InputRecMode::RIGID : InputRecMode::FREE;
 }
 
 /* -------------------------------------------------------------------------- */

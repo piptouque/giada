@@ -29,6 +29,8 @@
 #ifndef GE_SEQUENCER_H
 #define GE_SEQUENCER_H
 
+#include "core/types.h"
+#include "glue/main.h"
 #include <FL/Fl_Box.H>
 
 namespace giada::v
@@ -42,8 +44,11 @@ public:
 
 	void refresh();
 
-  private:
-	Fl_Color getCursorColor();
+private:
+	void paintCursor(int w) const;
+	void paintCursor(int position, int w, Fl_Color col) const;
+
+	c::main::Sequencer m_data;
 };
 } // namespace giada::v
 

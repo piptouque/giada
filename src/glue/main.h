@@ -72,11 +72,21 @@ struct IO
 	float getMasterInPeak();
 };
 
+struct Sequencer
+{
+	bool shouldBlink;
+	bool isFreeModeInputRec;
+	int  beats;
+	int  bars;
+	int  currentBeat;
+};
+
 /* get*
 Returns viewModel objects filled with data. */
 
-Timer getTimer();
-IO    getIO();
+Timer     getTimer();
+IO        getIO();
+Sequencer getSequencer();
 
 /* setBpm (1)
 Sets bpm value from string to float. */
@@ -99,6 +109,7 @@ Enables the "hear what you playing" feature. */
 void setInToOut(bool v);
 
 void toggleRecOnSignal();
+void toggleFreeInputRec();
 
 /* closeProject
 Resets Giada to init state. If resetGui also refresh all widgets. */

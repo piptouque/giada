@@ -149,7 +149,7 @@ list(APPEND SOURCES
 	src/gui/elems/mainWindow/mainMenu.cpp
 	src/gui/elems/mainWindow/mainTimer.cpp
 	src/gui/elems/mainWindow/mainTransport.cpp
-	src/gui/elems/mainWindow/beatMeter.cpp
+	src/gui/elems/mainWindow/sequencer.cpp
 	src/gui/elems/mainWindow/keyboard/channelMode.cpp
 	src/gui/elems/mainWindow/keyboard/channelButton.cpp
 	src/gui/elems/mainWindow/keyboard/channelStatus.cpp
