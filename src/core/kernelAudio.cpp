@@ -90,7 +90,7 @@ int callback_(void* outBuf, void* inBuf, unsigned bufferSize, double /*streamTim
 		clock::recvJackSync();
 #endif
 
-	mixer::Info info;
+	mixer::RenderInfo info;
 	info.isAudioReady    = model::get().kernel.audioReady;
 	info.hasInput        = isInputEnabled();
 	info.isClockActive   = clock::isActive();

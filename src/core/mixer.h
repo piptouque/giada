@@ -50,7 +50,10 @@ constexpr int MASTER_OUT_CHANNEL_ID = 1;
 constexpr int MASTER_IN_CHANNEL_ID  = 2;
 constexpr int PREVIEW_CHANNEL_ID    = 3;
 
-struct Info
+/* RenderInfo
+Struct of parameters passed to Mixer for rendering. */
+
+struct RenderInfo
 {
 	bool  isAudioReady;
 	bool  hasInput;
@@ -92,7 +95,7 @@ const AudioBuffer& getRecBuffer();
 /* render
 Core rendering function. */
 
-int render(AudioBuffer& out, const AudioBuffer& in, const Info& info);
+int render(AudioBuffer& out, const AudioBuffer& in, const RenderInfo& info);
 
 /* startInputRec, stopInputRec
 Starts/stops input recording on frame 'from'. The latter returns the number of

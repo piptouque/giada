@@ -180,7 +180,7 @@ Last touches after the output has been rendered: apply inToOut if any, apply
 output volume, compute peak. */
 
 void finalizeOutput_(const model::Mixer& mixer, AudioBuffer& outBuf,
-    const Info& info)
+    const RenderInfo& info)
 {
 	if (info.inToOut)
 		outBuf.addData(inBuffer_, info.outVol);
@@ -245,7 +245,7 @@ const AudioBuffer& getRecBuffer()
 
 /* -------------------------------------------------------------------------- */
 
-int render(AudioBuffer& out, const AudioBuffer& in, const Info& info)
+int render(AudioBuffer& out, const AudioBuffer& in, const RenderInfo& info)
 {
 	const model::Lock   rtLock = model::get_RT();
 	const model::Mixer& mixer  = rtLock.get().mixer;
