@@ -28,6 +28,8 @@
 
 #include "sequencer.h"
 #include "core/const.h"
+#include "gui/drawing.h"
+#include "utils/math.h"
 #include <FL/fl_draw.H>
 
 namespace giada::v
@@ -50,55 +52,74 @@ void geSequencer::refresh()
 
 void geSequencer::draw()
 {
-	const int cursorW = w() / G_MAX_BEATS;
+	m_background = geompp::Rect(x(), y(), w(), h());
+	m_cell       = geompp::Rect(x(), y(), w() / G_MAX_BEATS, h()).reduced(0, REC_BARS_H);
 
-	/* Border and background. */
+	/* Cleanup */
+	drawRectf(m_background, FL_BACKGROUND_COLOR);
 
-	fl_rectf(x(), y(), w(), h(), FL_BACKGROUND_COLOR);
-	fl_rect(x(), y(), w(), h(), G_COLOR_GREY_4);
+	if (m_data.isFreeModeInputRec)
+		drawRecBars();
 
-	/* Beat cells. */
+	drawBody();
+	drawCursor();
+}
 
-	fl_color(G_COLOR_GREY_4);
+/* -------------------------------------------------------------------------- */
+
+void geSequencer::drawBody() const
+{
+	const geompp::Rect body = m_background.reduced(0, REC_BARS_H);
+
+	/* Background and borders. */
+
+	drawRectf(body, FL_BACKGROUND_COLOR);
+	drawRect(body, G_COLOR_GREY_4);
+
+	/* Beat lines. */
+
 	for (int i = 1; i <= m_data.beats; i++)
-		fl_line(x() + cursorW * i, y(), x() + cursorW * i, y() + h() - 2);
+		drawLine(m_cell.getHeightAsLine().withShiftedX(m_cell.w * i), G_COLOR_GREY_4);
 
-	/* Bar line. */
+	/* Bar lines. */
 
-	fl_color(G_COLOR_LIGHT_1);
 	const int delta = m_data.beats / m_data.bars;
 	for (int i = 1; i < m_data.bars; i++)
-		fl_line(x() + cursorW * (i * delta), y() + 1, x() + cursorW * (i * delta), y() + h() - 2);
+		drawLine(m_cell.getHeightAsLine().withShiftedX(m_cell.w * i * delta), G_COLOR_LIGHT_1);
 
 	/* Unused grey area. */
 
-	const int greyX = m_data.beats * cursorW;
-	fl_rectf(x() + greyX, y(), w() - greyX, h(), G_COLOR_GREY_4);
-
-	/* Cursor. */
-
-	paintCursor(cursorW);
+	drawRectf(body.withTrimmedLeft(m_data.beats * m_cell.w), G_COLOR_GREY_4);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void geSequencer::paintCursor(int position, int width, Fl_Color color) const
+void geSequencer::drawRecBars() const
 {
-	fl_rectf(x() + (position * width) + 3, y() + 3, width - 5, h() - 6, color);
+	int length = u::math::map(m_data.recPosition, m_data.recMaxLength, w());
+
+	drawRectf(geompp::Rect(x(), y(), length, h()), G_COLOR_LIGHT_1);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void geSequencer::paintCursor(int width) const
+void geSequencer::drawCursor(int beat, Fl_Color color) const
+{
+	drawRectf(m_cell.withShiftedX(beat * m_cell.w).reduced(CURSOR_PAD), color);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void geSequencer::drawCursor() const
 {
 	Fl_Color color = m_data.shouldBlink ? FL_BACKGROUND_COLOR : G_COLOR_LIGHT_1;
 
 	if (m_data.isFreeModeInputRec)
 	{
 		for (int i = 0; i < m_data.beats; i++)
-			paintCursor(i, width, color);
+			drawCursor(i, color);
 	}
 	else
-		paintCursor(m_data.currentBeat, width, color);
+		drawCursor(m_data.currentBeat, color);
 }
 } // namespace giada::v

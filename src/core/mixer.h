@@ -68,6 +68,15 @@ struct RenderInfo
 	float recTriggerLevel;
 };
 
+/* RecordInfo
+Information regarding the input recording progress. */
+
+struct RecordInfo
+{
+	Frame position;
+	Frame maxLength;
+};
+
 void init(Frame framesInLoop, Frame framesInBuffer);
 
 /* enable, disable
@@ -109,6 +118,8 @@ bool isChannelAudible(const channel::Data& c);
 
 float getPeakOut();
 float getPeakIn();
+
+RecordInfo getRecordInfo();
 } // namespace giada::m::mixer
 
 #endif

@@ -73,7 +73,7 @@ gdMainWindow::gdMainWindow(int W, int H, const char* title, int argc, char** arg
 #endif
 	mainTransport = new v::geMainTransport(8, 39);
 	mainTimer     = new v::geMainTimer(571, 44);
-	sequencer     = new v::geSequencer(100, 83, 609, 20);
+	sequencer     = new v::geSequencer(100, 78, 609, 30);
 	keyboard      = new v::geKeyboard(8, 122, w() - 16, 380);
 
 	/* zone 1 - menus, and I/O tools */

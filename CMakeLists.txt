@@ -92,6 +92,7 @@ list(APPEND SOURCES
 	src/gui/dispatcher.cpp
 	src/gui/updater.cpp
 	src/gui/model.cpp
+	src/gui/drawing.cpp
 	src/gui/dialogs/keyGrabber.cpp
 	src/gui/dialogs/about.cpp
 	src/gui/dialogs/mainWindow.cpp

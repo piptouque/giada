@@ -153,11 +153,15 @@ Sequencer getSequencer()
 {
 	Sequencer out;
 
+	m::mixer::RecordInfo recInfo = m::mixer::getRecordInfo();
+
 	out.isFreeModeInputRec = m::recManager::isRecordingInput() && m::conf::conf.inputRecMode == InputRecMode::FREE;
-	out.shouldBlink        = u::gui::shouldBlink() && (m::clock::getStatus() == ClockStatus::WAITING || out.isFreeModeInputRec),
-	out.beats              = m::clock::getBeats(),
-	out.bars               = m::clock::getBars(),
+	out.shouldBlink        = u::gui::shouldBlink() && (m::clock::getStatus() == ClockStatus::WAITING || out.isFreeModeInputRec);
+	out.beats              = m::clock::getBeats();
+	out.bars               = m::clock::getBars();
 	out.currentBeat        = m::clock::getCurrentBeat();
+	out.recPosition        = recInfo.position;
+	out.recMaxLength       = recInfo.maxLength;
 
 	return out;
 }

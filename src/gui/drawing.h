@@ -2,8 +2,6 @@
  *
  * Giada - Your Hardcore Loopmachine
  *
- * beatMeter
- *
  * -----------------------------------------------------------------------------
  *
  * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
@@ -26,39 +24,17 @@
  *
  * -------------------------------------------------------------------------- */
 
-#ifndef GE_SEQUENCER_H
-#define GE_SEQUENCER_H
+#ifndef G_V_DRAWING_H
+#define G_V_DRAWING_H
 
-#include "core/types.h"
 #include "deps/geompp/src/rect.hpp"
-#include "glue/main.h"
-#include <FL/Fl_Box.H>
+#include <FL/fl_draw.H>
 
 namespace giada::v
 {
-class geSequencer : public Fl_Box
-{
-public:
-	geSequencer(int x, int y, int w, int h);
-
-	void draw() override;
-
-	void refresh();
-
-private:
-	static constexpr int REC_BARS_H = 3;
-	static constexpr int CURSOR_PAD = 3;
-
-	void drawBody() const;
-	void drawCursor() const;
-	void drawCursor(int beat, Fl_Color col) const;
-	void drawRecBars() const;
-
-	c::main::Sequencer m_data;
-
-	geompp::Rect<int> m_background;
-	geompp::Rect<int> m_cell;
-};
+void drawRectf(geompp::Rect<int> r, Fl_Color c);
+void drawRect(geompp::Rect<int> r, Fl_Color c);
+void drawLine(geompp::Line<int> l, Fl_Color c);
 } // namespace giada::v
 
 #endif

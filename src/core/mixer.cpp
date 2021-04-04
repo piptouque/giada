@@ -331,4 +331,11 @@ bool isChannelAudible(const channel::Data& c)
 
 float getPeakOut() { return m::model::get().mixer.state->peakOut.load(); }
 float getPeakIn() { return m::model::get().mixer.state->peakIn.load(); }
+
+/* -------------------------------------------------------------------------- */
+
+RecordInfo getRecordInfo()
+{
+	return {inputTracker_, recBuffer_.countFrames()};
+}
 } // namespace giada::m::mixer

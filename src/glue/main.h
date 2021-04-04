@@ -74,11 +74,13 @@ struct IO
 
 struct Sequencer
 {
-	bool shouldBlink;
-	bool isFreeModeInputRec;
-	int  beats;
-	int  bars;
-	int  currentBeat;
+	bool  isFreeModeInputRec;
+	bool  shouldBlink;
+	int   beats;
+	int   bars;
+	int   currentBeat;
+	Frame recPosition;
+	Frame recMaxLength;
 };
 
 /* get*
