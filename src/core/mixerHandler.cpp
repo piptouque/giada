@@ -129,11 +129,11 @@ void recordChannel_(channel::Data& ch, Frame recordedFrames)
 	std::unique_ptr<Wave> wave     = waveManager::createEmpty(recordedFrames, G_MAX_IO_CHANS,
         conf::conf.samplerate, filename);
 
-	G_DEBUG("Created new Wave, size=" << wave->getSize());
+	G_DEBUG("Created new Wave, size=" << wave->getBuffer().countFrames());
 
 	/* Copy up to wave.getSize() from the mixer's input buffer into wave's. */
 
-	wave->copyData(mixer::getRecBuffer(), /*gain=*/1.0f, wave->getSize());
+	wave->getBuffer().copyData(mixer::getRecBuffer(), /*gain=*/1.0f, wave->getBuffer().countFrames());
 
 	/* Update channel with the new Wave. */
 
@@ -158,7 +158,7 @@ void overdubChannel_(channel::Data& ch)
 	thread at the same time. */
 
 	model::DataLock lock;
-	wave->addData(mixer::getRecBuffer());
+	wave->getBuffer().addData(mixer::getRecBuffer());
 	wave->setLogical(true);
 
 	setupChannelPostRecording_(ch);
@@ -263,7 +263,7 @@ void cloneChannel(ID channelId)
 	if (newChannel.samplePlayer && newChannel.samplePlayer->hasWave())
 	{
 		Wave* wave = newChannel.samplePlayer->getWave();
-		model::add(waveManager::createFromWave(*wave, 0, wave->getSize()));
+		model::add(waveManager::createFromWave(*wave, 0, wave->getBuffer().countFrames()));
 	}
 
 	/* Then push the new channel in the channels vector. */

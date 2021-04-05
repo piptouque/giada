@@ -143,7 +143,7 @@ ID Data::getWaveId() const
 
 Frame Data::getWaveSize() const
 {
-	return hasWave() ? waveReader.wave->getSize() : 0;
+	return hasWave() ? waveReader.wave->getBuffer().countFrames() : 0;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -221,7 +221,7 @@ void loadWave(channel::Data& ch, Wave* w)
 	{
 		ch.state->playStatus.store(ChannelStatus::OFF);
 		ch.name              = w->getBasename(/*ext=*/false);
-		ch.samplePlayer->end = w->getSize() - 1;
+		ch.samplePlayer->end = w->getBuffer().countFrames() - 1;
 	}
 	else
 	{

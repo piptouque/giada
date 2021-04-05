@@ -113,7 +113,22 @@ recorded frames. */
 void  startInputRec(Frame from);
 Frame stopInputRec();
 
+/* setSignalCallback
+Registers the function to be called when the audio signal reaches a certain
+threshold (record-on-signal mode). */
+
 void setSignalCallback(std::function<void()> f);
+
+/* setEndOfRecCallback
+Registers the function to be called when the end of the internal recording 
+buffer has been reached. */
+
+void setEndOfRecCallback(std::function<void()> f);
+
+/* isChannelAudible
+True if the channel 'c' is currently audible: not muted or not included in a 
+solo session. */
+
 bool isChannelAudible(const channel::Data& c);
 
 float getPeakOut();

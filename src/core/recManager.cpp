@@ -178,6 +178,9 @@ bool startInputRec(RecTriggerMode triggerMode, InputRecMode inputMode)
 	if (triggerMode == RecTriggerMode::SIGNAL || inputMode == InputRecMode::FREE)
 		clock::rewind();
 
+	if (inputMode == InputRecMode::FREE)
+		mixer::setEndOfRecCallback([inputMode] { stopInputRec(inputMode); });
+
 	if (triggerMode == RecTriggerMode::NORMAL)
 	{
 		startInputRec_();
@@ -186,7 +189,7 @@ bool startInputRec(RecTriggerMode triggerMode, InputRecMode inputMode)
 	else
 	{
 		clock::setStatus(ClockStatus::WAITING);
-		mixer::setSignalCallback([inputMode] { startInputRec_(); });
+		mixer::setSignalCallback([] { startInputRec_(); });
 		G_DEBUG("Start input rec, SIGNAL mode");
 	}
 
@@ -201,6 +204,8 @@ void stopInputRec(InputRecMode recMode)
 	setRecordingInput_(false);
 
 	Frame recordedFrames = mixer::stopInputRec();
+
+	G_DEBUG("Stop input rec, recordedFrames=" << recordedFrames);
 
 	/* When recording in RIGID mode the recorded frames are always the current
 	loop length. */

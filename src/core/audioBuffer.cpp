@@ -164,42 +164,47 @@ void AudioBuffer::free()
 
 /* -------------------------------------------------------------------------- */
 
-void AudioBuffer::copyData(const float* data, Frame frames, int channels, int offset)
+void AudioBuffer::copyData(const AudioBuffer& b, float gain, Frame framesToCopy,
+    Frame srcOffset, Frame destOffset)
 {
+	const int srcChannels  = b.countChannels();
+	const int destChannels = countChannels();
+
 	assert(m_data != nullptr);
-	assert(offset < m_size);
+	assert(destOffset >= 0 && destOffset < m_size);
+	assert(srcChannels <= destChannels);
 
-	/* Make sure the amount of frames lies within the current buffer size. */
-	frames = std::min(frames, m_size - offset);
+	/* Make sure the amount of frames to copy lies within the current buffer 
+	size. */
 
-	if (channels < NUM_CHANS) // i.e. one channel, mono
-		for (int i = offset, k = 0; i < m_size; i++, k++)
-			for (int j = 0; j < countChannels(); j++)
-				(*this)[i][j] = data[k];
-	else if (channels == NUM_CHANS)
-		std::copy_n(data, frames * channels, m_data + (offset * channels));
+	framesToCopy = framesToCopy == -1 ? b.countFrames() : framesToCopy;
+	framesToCopy = std::min(framesToCopy, m_size - destOffset);
+
+	/* Case 1) source has less channels than this one: brutally spread source's
+	channel 0 over this one (TODO - maybe mixdown source channels first?)
+	   Case 2) source has same amount of channels: copy them 1:1. */
+
+	if (srcChannels < destChannels)
+		for (int frame = destOffset, k = srcOffset; frame < framesToCopy; frame++, k++)
+			for (int ch = 0; ch < destChannels; ch++)
+				set(frame, ch, b[k][0] * gain);
 	else
-		assert(false);
-}
-
-void AudioBuffer::copyData(const AudioBuffer& b, float gain, Frame frames)
-{
-	copyData(b[0], frames != -1 ? frames : b.countFrames(), b.countChannels());
-	if (gain != 1.0f)
-		applyGain(gain);
+		for (int frame = destOffset, k = srcOffset; frame < framesToCopy; frame++, k++)
+			for (int ch = 0; ch < destChannels; ch++)
+				set(frame, ch, b[k][ch] * gain);
 }
 
 /* -------------------------------------------------------------------------- */
 
-void AudioBuffer::addData(const AudioBuffer& b, float gain, Pan pan)
+void AudioBuffer::addData(const AudioBuffer& b, float gain, Pan pan, Frame offset)
 {
 	assert(m_data != nullptr);
-	assert(countFrames() <= b.countFrames());
-	assert(b.countChannels() <= NUM_CHANS);
+	assert(offset < m_size);
+	assert(b.countChannels() == countChannels()); // Same channel size for now
 
-	for (int i = 0; i < countFrames(); i++)
-		for (int j = 0; j < countChannels(); j++)
-			(*this)[i][j] += b[i][j] * gain * pan[j];
+	for (Frame f = offset, k = 0; f < countFrames(); f++, k++)
+		for (int ch = 0; ch < countChannels(); ch++)
+			sum(f, ch, b[k][ch] * gain * pan[ch]);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -209,6 +214,11 @@ void AudioBuffer::applyGain(float g)
 	for (int i = 0; i < countSamples(); i++)
 		m_data[i] *= g;
 }
+
+/* -------------------------------------------------------------------------- */
+
+void AudioBuffer::sum(Frame f, int channel, float val) { (*this)[f][channel] += val; }
+void AudioBuffer::set(Frame f, int channel, float val) { (*this)[f][channel] = val; }
 
 /* -------------------------------------------------------------------------- */
 

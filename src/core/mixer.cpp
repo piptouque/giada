@@ -56,6 +56,12 @@ Callback triggered when the input signal level reaches a threshold. */
 
 std::function<void()> signalCb_ = nullptr;
 
+/* endOfRecCb_
+Callback triggered when the end of the internal recording buffer has been 
+reached.*/
+
+std::function<void()> endOfRecCb_ = nullptr;
+
 /* -------------------------------------------------------------------------- */
 
 /* invokeSignalCb_
@@ -74,6 +80,19 @@ void invokeSignalCb_()
 
 /* -------------------------------------------------------------------------- */
 
+/* invokeEndOfRecCb_
+Same rationale of invokeSignalCb_, for the endOfRecCb_ callback. */
+
+void invokeEndOfRecCb_()
+{
+	eventDispatcher::pumpEvent({eventDispatcher::EventType::FUNCTION, 0, 0, []() {
+		                            endOfRecCb_();
+		                            signalCb_ = nullptr;
+	                            }});
+}
+
+/* -------------------------------------------------------------------------- */
+
 /* lineInRec
 Records from line in. 'maxFrames' determines how many frames to record before
 the internal tracker loops over. The value changes whether you are recording
@@ -81,9 +100,34 @@ in RIGID or FREE mode. */
 
 void lineInRec_(const AudioBuffer& inBuf, Frame maxFrames, float inVol)
 {
+	assert(maxFrames <= recBuffer_.countFrames());
+
+	recBuffer_.addData(inBuf, inVol, /*pan=*/{1.0f, 1.0f}, /*offset=*/inputTracker_);
+
+	inputTracker_ = inputTracker_ + inBuf.countFrames();
+
+	if (inputTracker_ >= maxFrames && endOfRecCb_ != nullptr)
+	{
+		invokeEndOfRecCb_();
+		return;
+	}
+
+	inputTracker_ %= maxFrames;
+
+	/*
 	for (int i = 0; i < inBuf.countFrames(); i++, inputTracker_++)
+	{
+		if (inputTracker_ == maxFrames && endOfRecCb_ != nullptr)
+		{
+			invokeEndOfRecCb_();
+			break;
+		}
+
+		inputTracker_ %= maxFrames;
+
 		for (int j = 0; j < inBuf.countChannels(); j++)
-			recBuffer_[inputTracker_ % maxFrames][j] += inBuf[i][j] * inVol; // adding: overdub!
+			recBuffer_[inputTracker_][j] += inBuf[i][j] * inVol; // adding: overdub!
+	}*/
 }
 
 /* -------------------------------------------------------------------------- */
@@ -310,10 +354,8 @@ Frame stopInputRec()
 
 /* -------------------------------------------------------------------------- */
 
-void setSignalCallback(std::function<void()> f)
-{
-	signalCb_ = f;
-}
+void setSignalCallback(std::function<void()> f) { signalCb_ = f; }
+void setEndOfRecCallback(std::function<void()> f) { endOfRecCb_ = f; }
 
 /* -------------------------------------------------------------------------- */
 
