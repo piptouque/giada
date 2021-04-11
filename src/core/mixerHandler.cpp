@@ -133,7 +133,7 @@ void recordChannel_(channel::Data& ch, Frame recordedFrames)
 
 	/* Copy up to wave.getSize() from the mixer's input buffer into wave's. */
 
-	wave->getBuffer().copyData(mixer::getRecBuffer(), /*gain=*/1.0f, wave->getBuffer().countFrames());
+	wave->getBuffer().set(mixer::getRecBuffer(), wave->getBuffer().countFrames());
 
 	/* Update channel with the new Wave. */
 
@@ -158,7 +158,7 @@ void overdubChannel_(channel::Data& ch)
 	thread at the same time. */
 
 	model::DataLock lock;
-	wave->getBuffer().addData(mixer::getRecBuffer());
+	wave->getBuffer().sum(mixer::getRecBuffer(), /*gain=*/1.0f);
 	wave->setLogical(true);
 
 	setupChannelPostRecording_(ch);

@@ -121,18 +121,4 @@ void Wave::replaceData(AudioBuffer&& b)
 {
 	m_buffer = std::move(b);
 }
-
-/* -------------------------------------------------------------------------- */
-/*
-void Wave::copyData(const float* data, Frame frames, int channels, Frame offset)
-{
-	m_buffer.copyData(data, frames, channels, offset);
-}
-
-void Wave::copyData(const AudioBuffer& b, float gain, Frame frames)
-{
-	m_buffer.copyData(b, gain, frames);
-}
-
-void Wave::addData(const AudioBuffer& b) { m_buffer.addData(b); }*/
 } // namespace giada::m

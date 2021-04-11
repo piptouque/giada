@@ -64,13 +64,13 @@ std::function<void()> endOfRecCb_ = nullptr;
 
 /* -------------------------------------------------------------------------- */
 
-/* invokeSignalCb_
+/* fireSignalCb_
 Invokes the signal callback. This is done by pumping a FUNCTION event to the
 event dispatcher, rather than invoking the callback directly. This is done on
 purpose: the callback might (and surely will) contain blocking stuff from 
 model:: that the realtime thread cannot perform directly. */
 
-void invokeSignalCb_()
+void fireSignalCb_()
 {
 	eventDispatcher::pumpEvent({eventDispatcher::EventType::FUNCTION, 0, 0, []() {
 		                            signalCb_();
@@ -80,10 +80,10 @@ void invokeSignalCb_()
 
 /* -------------------------------------------------------------------------- */
 
-/* invokeEndOfRecCb_
-Same rationale of invokeSignalCb_, for the endOfRecCb_ callback. */
+/* fireEndOfRecCb_
+Same rationale of fireSignalCb_, for the endOfRecCb_ callback. */
 
-void invokeEndOfRecCb_()
+void fireEndOfRecCb_()
 {
 	eventDispatcher::pumpEvent({eventDispatcher::EventType::FUNCTION, 0, 0, []() {
 		                            endOfRecCb_();
@@ -102,32 +102,14 @@ void lineInRec_(const AudioBuffer& inBuf, Frame maxFrames, float inVol)
 {
 	assert(maxFrames <= recBuffer_.countFrames());
 
-	recBuffer_.addData(inBuf, inVol, /*pan=*/{1.0f, 1.0f}, /*offset=*/inputTracker_);
+	recBuffer_.sum(inBuf, /*framesToCopy=*/-1, /*srcOffset=*/0, /*destOffset=*/inputTracker_, inVol);
 
-	inputTracker_ = inputTracker_ + inBuf.countFrames();
+	inputTracker_ += inBuf.countFrames();
 
 	if (inputTracker_ >= maxFrames && endOfRecCb_ != nullptr)
-	{
-		invokeEndOfRecCb_();
-		return;
-	}
-
-	inputTracker_ %= maxFrames;
-
-	/*
-	for (int i = 0; i < inBuf.countFrames(); i++, inputTracker_++)
-	{
-		if (inputTracker_ == maxFrames && endOfRecCb_ != nullptr)
-		{
-			invokeEndOfRecCb_();
-			break;
-		}
-
+		fireEndOfRecCb_();
+	else
 		inputTracker_ %= maxFrames;
-
-		for (int j = 0; j < inBuf.countChannels(); j++)
-			recBuffer_[inputTracker_][j] += inBuf[i][j] * inVol; // adding: overdub!
-	}*/
 }
 
 /* -------------------------------------------------------------------------- */
@@ -144,7 +126,7 @@ void processLineIn_(const model::Mixer& mixer, const AudioBuffer& inBuf,
 	if (signalCb_ != nullptr && u::math::linearToDB(peak) > recTriggerLevel)
 	{
 		G_DEBUG("Signal > threshold!");
-		invokeSignalCb_();
+		fireSignalCb_();
 	}
 
 	mixer.state->peakIn.store(peak);
@@ -154,7 +136,7 @@ void processLineIn_(const model::Mixer& mixer, const AudioBuffer& inBuf,
 
 	assert(inBuf.countChannels() <= inBuffer_.countChannels());
 
-	inBuffer_.copyData(inBuf, inVol);
+	inBuffer_.set(inBuf, inVol);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -227,7 +209,7 @@ void finalizeOutput_(const model::Mixer& mixer, AudioBuffer& outBuf,
     const RenderInfo& info)
 {
 	if (info.inToOut)
-		outBuf.addData(inBuffer_, info.outVol);
+		outBuf.set(inBuffer_, info.outVol);
 	else
 		outBuf.applyGain(info.outVol);
 

@@ -179,9 +179,9 @@ void paste(const Wave& src, Wave& des, Frame a)
 	/* |---original data---|///paste data///|---original data---|
 	         des[0, a)      src[0, src.size)   des[a, des.size)	*/
 
-	newData.copyData(des.getBuffer(), /*gain=*/1.0f, a, 0);
-	newData.copyData(src.getBuffer(), /*gain=*/1.0f, src.getBuffer().countFrames(), a);
-	newData.copyData(des.getBuffer(), /*gain=*/1.0f, des.getBuffer().countFrames() - a, src.getBuffer().countFrames() + a);
+	newData.set(des.getBuffer(), a, 0);
+	newData.set(src.getBuffer(), src.getBuffer().countFrames(), a);
+	newData.set(des.getBuffer(), des.getBuffer().countFrames() - a, src.getBuffer().countFrames() + a);
 
 	des.replaceData(std::move(newData));
 	des.setEdited(true);

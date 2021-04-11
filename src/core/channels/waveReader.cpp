@@ -132,7 +132,7 @@ WaveReader::Result WaveReader::fillCopy(AudioBuffer& dest, Frame start, Frame ma
 	if (used > max - start)
 		used = max - start;
 
-	dest.copyData(wave->getBuffer(), 1.0f, used, start, offset);
+	dest.set(wave->getBuffer(), used, start, offset);
 
 	return {used, used};
 }
