@@ -275,8 +275,11 @@ void toggleRecOnSignal()
 
 void toggleFreeInputRec()
 {
-	/* TODO - can't change from RIGID to FREE if there's already a filled sample
-	channel in the project */
+	/* Can't change from RIGID to FREE if there's already a filled Sample 
+	Channel in the current project. */
+
+	if (m::conf::conf.inputRecMode == InputRecMode::RIGID && m::mh::hasAudioData())
+		return;
 	m::conf::conf.inputRecMode = m::conf::conf.inputRecMode == InputRecMode::FREE ? InputRecMode::RIGID : InputRecMode::FREE;
 }
 
