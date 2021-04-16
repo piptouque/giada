@@ -210,7 +210,7 @@ void AudioBuffer::copyData(const AudioBuffer& b, Frame framesToCopy,
 	channel 0 over this one (TODO - maybe mixdown source channels first?)
 	   Case 2) source has same amount of channels: copy them 1:1. */
 
-	for (int destF = 0, srcF = srcOffset; destF < framesToCopy; destF++, srcF++)
+	for (int destF = 0, srcF = srcOffset; destF < framesToCopy && destF < b.countFrames(); destF++, srcF++)
 	{
 		for (int ch = 0; ch < destChannels; ch++)
 		{

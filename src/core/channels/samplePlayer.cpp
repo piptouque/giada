@@ -200,7 +200,7 @@ void render(const channel::Data& ch)
 		tracker = begin;
 		sampleAdvancer::onLastFrame(ch); // TODO - better moving this to samplerAdvancer::advance
 		if (shouldLoop_(ch))
-			tracker += fillBuffer_(ch, tracker, res.generated - 1).used;
+			tracker += fillBuffer_(ch, tracker, res.generated).used;
 	}
 
 	ch.state->offset = 0;
