@@ -232,6 +232,7 @@ void stopInputRec(InputRecMode recMode)
 		clock::rewind();
 		clock::setBpm(clock::calcBpmFromRec(recordedFrames));
 		mixer::setEndOfRecCallback(nullptr);
+		model::triggerSwapCb(model::SwapType::HARD);
 	}
 }
 
