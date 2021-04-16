@@ -102,14 +102,19 @@ void lineInRec_(const AudioBuffer& inBuf, Frame maxFrames, float inVol)
 {
 	assert(maxFrames <= recBuffer_.countFrames());
 
-	recBuffer_.sum(inBuf, /*framesToCopy=*/-1, /*srcOffset=*/0, /*destOffset=*/inputTracker_, inVol);
+	if (inputTracker_ >= maxFrames && endOfRecCb_ != nullptr)
+	{
+		fireEndOfRecCb_();
+		return;
+	}
+
+	const Frame framesToCopy = -1; // copy everything
+	const Frame srcOffset    = 0;
+	const Frame destOffset   = inputTracker_ % maxFrames; // loop over at maxFrames
+
+	recBuffer_.sum(inBuf, framesToCopy, srcOffset, destOffset, inVol);
 
 	inputTracker_ += inBuf.countFrames();
-
-	if (inputTracker_ >= maxFrames && endOfRecCb_ != nullptr)
-		fireEndOfRecCb_();
-	else
-		inputTracker_ %= maxFrames;
 }
 
 /* -------------------------------------------------------------------------- */
