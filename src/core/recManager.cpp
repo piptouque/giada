@@ -231,6 +231,7 @@ void stopInputRec(InputRecMode recMode)
 	{
 		clock::rewind();
 		clock::setBpm(clock::calcBpmFromRec(recordedFrames));
+		mixer::setEndOfRecCallback(nullptr);
 	}
 }
 
