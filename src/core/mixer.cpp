@@ -87,7 +87,7 @@ void fireEndOfRecCb_()
 {
 	eventDispatcher::pumpEvent({eventDispatcher::EventType::FUNCTION, 0, 0, []() {
 		                            endOfRecCb_();
-		                            signalCb_ = nullptr;
+		                            endOfRecCb_ = nullptr;
 	                            }});
 }
 
@@ -214,7 +214,7 @@ void finalizeOutput_(const model::Mixer& mixer, AudioBuffer& outBuf,
     const RenderInfo& info)
 {
 	if (info.inToOut)
-		outBuf.set(inBuffer_, info.outVol);
+		outBuf.sum(inBuffer_, info.outVol);
 	else
 		outBuf.applyGain(info.outVol);
 
