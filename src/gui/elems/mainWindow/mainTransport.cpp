@@ -49,7 +49,7 @@ geMainTransport::geMainTransport(int x, int y)
 , m_recTriggerMode(0, 0, 15, 25, recTriggerModeOff_xpm, recTriggerModeOn_xpm)
 , m_recAction(0, 0, 25, 25, recOff_xpm, recOn_xpm)
 , m_recInput(0, 0, 25, 25, inputRecOff_xpm, inputRecOn_xpm)
-, m_inputRecMode(0, 0, 15, 25)
+, m_inputRecMode(0, 0, 15, 25, freeInputRecOff_xpm, freeInputRecOn_xpm)
 , m_spacer2(0, 0, 10, 25)
 , m_metronome(0, 0, 15, 25, metronomeOff_xpm, metronomeOn_xpm)
 {
@@ -71,7 +71,7 @@ geMainTransport::geMainTransport(int x, int y)
 	m_recAction.copy_tooltip("Record actions");
 	m_recInput.copy_tooltip("Record audio");
 	m_inputRecMode.copy_tooltip("Free loop-length mode");
-	    m_metronome.copy_tooltip("Metronome");
+	m_metronome.copy_tooltip("Metronome");
 
 	m_rewind.callback([](Fl_Widget* /*w*/, void* /*v*/) {
 		c::events::rewindSequencer(Thread::MAIN);
