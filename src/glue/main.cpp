@@ -263,11 +263,11 @@ void setInToOut(bool v)
 
 void toggleRecOnSignal()
 {
-	/* Can't set RecTriggerMode::SIGNAL while sequencer is running, in order
-	to prevent mistakes while live recording. */
-
-	if (m::conf::conf.recTriggerMode == RecTriggerMode::NORMAL && m::clock::isRunning())
+	if (!m::recManager::canEnableRecOnSignal())
+	{
+		m::conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
 		return;
+	}
 	m::conf::conf.recTriggerMode = m::conf::conf.recTriggerMode == RecTriggerMode::NORMAL ? RecTriggerMode::SIGNAL : RecTriggerMode::NORMAL;
 }
 
@@ -275,11 +275,11 @@ void toggleRecOnSignal()
 
 void toggleFreeInputRec()
 {
-	/* Can't change from RIGID to FREE if there's already a filled Sample 
-	Channel in the current project. */
-
-	if (m::conf::conf.inputRecMode == InputRecMode::RIGID && m::mh::hasAudioData())
+	if (!m::recManager::canEnableFreeInputRec())
+	{
+		m::conf::conf.inputRecMode = InputRecMode::RIGID;
 		return;
+	}
 	m::conf::conf.inputRecMode = m::conf::conf.inputRecMode == InputRecMode::FREE ? InputRecMode::RIGID : InputRecMode::FREE;
 }
 

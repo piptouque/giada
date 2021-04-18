@@ -72,7 +72,7 @@ bool startActionRec_()
 {
 	clock::setStatus(ClockStatus::RUNNING);
 	sequencer::start();
-	m::conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
+	conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
 	return true;
 }
 
@@ -83,7 +83,7 @@ void startInputRec_()
 	/* Start recording from the current frame, not the beginning. */
 	mixer::startInputRec(clock::getCurrentFrame());
 	sequencer::start();
-	m::conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
+	conf::conf.recTriggerMode = RecTriggerMode::NORMAL;
 }
 } // namespace
 
@@ -122,7 +122,7 @@ void startActionRec(RecTriggerMode mode)
 	{ // RecTriggerMode::SIGNAL
 		clock::setStatus(ClockStatus::WAITING);
 		clock::rewind();
-		m::midiDispatcher::setSignalCallback(startActionRec_);
+		midiDispatcher::setSignalCallback(startActionRec_);
 		v::dispatcher::setSignalCallback(startActionRec_);
 		setRecordingAction_(true);
 	}
@@ -205,13 +205,13 @@ void stopInputRec(InputRecMode recMode)
 
 	Frame recordedFrames = mixer::stopInputRec();
 
-	G_DEBUG("Stop input rec, recordedFrames=" << recordedFrames);
-
-	/* When recording in RIGID mode the recorded frames are always the current
-	loop length. */
+	/* When recording in RIGID mode, the amount of recorded frames is always 
+	equal to the current loop length. */
 
 	if (recMode == InputRecMode::RIGID)
 		recordedFrames = clock::getFramesInLoop();
+
+	G_DEBUG("Stop input rec, recordedFrames=" << recordedFrames);
 
 	/* If you stop the Input Recorder in SIGNAL mode before any actual 
 	recording: just clean up everything and return. */
@@ -232,7 +232,7 @@ void stopInputRec(InputRecMode recMode)
 		clock::rewind();
 		clock::setBpm(clock::calcBpmFromRec(recordedFrames));
 		mixer::setEndOfRecCallback(nullptr);
-		model::triggerSwapCb(model::SwapType::HARD);
+		refreshInputRecMode(); // Back to RIGID mode if necessary
 	}
 }
 
@@ -246,5 +246,16 @@ bool toggleInputRec(RecTriggerMode m, InputRecMode i)
 		return true;
 	}
 	return startInputRec(m, i);
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool canEnableRecOnSignal() { return !clock::isRunning(); }
+bool canEnableFreeInputRec() { return !mh::hasAudioData(); }
+
+void refreshInputRecMode()
+{
+	if (!canEnableFreeInputRec())
+		conf::conf.inputRecMode = InputRecMode::RIGID;
 }
 } // namespace giada::m::recManager

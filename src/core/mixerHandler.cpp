@@ -222,6 +222,8 @@ int loadChannel(ID channelId, const std::string& fname)
 	if (old != nullptr)
 		model::remove<Wave>(*old);
 
+	recManager::refreshInputRecMode();
+
 	return res.status;
 }
 
@@ -244,6 +246,8 @@ void addAndLoadChannel(ID columnId, std::unique_ptr<Wave>&& w)
 
 	samplePlayer::loadWave(channel, &wave);
 	model::swap(model::SwapType::HARD);
+
+	recManager::refreshInputRecMode();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -287,6 +291,8 @@ void freeChannel(ID channelId)
 
 	if (wave != nullptr)
 		model::remove<Wave>(*wave);
+
+	recManager::refreshInputRecMode();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -296,8 +302,11 @@ void freeAllChannels()
 	for (channel::Data& ch : model::get().channels)
 		if (ch.samplePlayer)
 			samplePlayer::loadWave(ch, nullptr);
+
 	model::swap(model::SwapType::HARD);
 	model::clear<model::WavePtrs>();
+
+	recManager::refreshInputRecMode();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -321,6 +330,8 @@ void deleteChannel(ID channelId)
 #ifdef WITH_VST
 	pluginHost::freePlugins(plugins);
 #endif
+
+	recManager::refreshInputRecMode();
 }
 
 /* -------------------------------------------------------------------------- */
