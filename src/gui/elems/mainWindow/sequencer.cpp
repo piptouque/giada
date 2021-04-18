@@ -70,6 +70,7 @@ void geSequencer::draw()
 void geSequencer::drawBody() const
 {
 	const geompp::Rect body = m_background.reduced(0, REC_BARS_H);
+	const geompp::Line line = m_cell.getHeightAsLine().withY2(m_cell.yh - 1); // TODO m_cell.yh - 1: FLTK glitch?
 
 	/* Background and borders. */
 
@@ -79,13 +80,13 @@ void geSequencer::drawBody() const
 	/* Beat lines. */
 
 	for (int i = 1; i <= m_data.beats; i++)
-		drawLine(m_cell.getHeightAsLine().withShiftedX(m_cell.w * i), G_COLOR_GREY_4);
+		drawLine(line.withShiftedX(m_cell.w * i), G_COLOR_GREY_4);
 
 	/* Bar lines. */
 
 	const int delta = m_data.beats / m_data.bars;
 	for (int i = 1; i < m_data.bars; i++)
-		drawLine(m_cell.getHeightAsLine().withShiftedX(m_cell.w * i * delta), G_COLOR_LIGHT_1);
+		drawLine(line.withShiftedX(m_cell.w * i * delta), G_COLOR_LIGHT_1);
 
 	/* Unused grey area. */
 
@@ -105,7 +106,8 @@ void geSequencer::drawRecBars() const
 
 void geSequencer::drawCursor(int beat, Fl_Color color) const
 {
-	drawRectf(m_cell.withShiftedX(beat * m_cell.w).reduced(CURSOR_PAD), color);
+	// TODO withW(...): FLTK glitch?
+	drawRectf(m_cell.withShiftedX(beat * m_cell.w).reduced(CURSOR_PAD).withW(m_cell.w - CURSOR_PAD - 2), color);
 }
 
 /* -------------------------------------------------------------------------- */
