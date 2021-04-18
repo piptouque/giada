@@ -70,7 +70,10 @@ geMainTransport::geMainTransport(int x, int y)
 	                              "is detected.");
 	m_recAction.copy_tooltip("Record actions");
 	m_recInput.copy_tooltip("Record audio");
-	m_inputRecMode.copy_tooltip("Free loop-length mode");
+	m_inputRecMode.copy_tooltip("Free loop-length mode\n\nIf enabled, the sequencer "
+	                            "will adjust to the length of your first audio recording. "
+	                            "Available only if there are no other audio samples in the "
+	                            "project.");
 	m_metronome.copy_tooltip("Metronome");
 
 	m_rewind.callback([](Fl_Widget* /*w*/, void* /*v*/) {
