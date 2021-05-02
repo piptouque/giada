@@ -500,7 +500,7 @@ target_compile_options(giada PRIVATE ${COMPILER_OPTIONS})
 # Install rules
 # ------------------------------------------------------------------------------
 
-install(TARGETS giada DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(TARGETS giada DESTINATION ${CMAKE_INSTALL_FULL_BINDI})
 
 # ------------------------------------------------------------------------------
 # Extra
