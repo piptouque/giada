@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,43 +24,38 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_ACTION_H
 #define G_ACTION_H
 
-
-#include "types.h"
 #include "midiEvent.h"
+#include "types.h"
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
 struct Action
 {
-	ID        id = 0;  // Invalid
+	ID        id = 0; // Invalid
 	ID        channelId;
 	Frame     frame;
 	MidiEvent event;
 	ID        pluginId    = -1;
 	int       pluginParam = -1;
-	ID        prevId = 0;
-	ID        nextId = 0;
-	
+	ID        prevId      = 0;
+	ID        nextId      = 0;
+
 	const Action* prev = nullptr;
 	const Action* next = nullptr;
 
-	bool isValid() const 
+	bool isValid() const
 	{
 		return id != 0;
-	}    
+	}
 
 	bool isVolumeEnvelope() const
-	{ 
-		return event.getStatus() == MidiEvent::ENVELOPE && pluginId == -1; 
+	{
+		return event.getStatus() == MidiEvent::ENVELOPE && pluginId == -1;
 	}
 };
-
-}} // giada::m::
+} // namespace giada::m
 
 #endif

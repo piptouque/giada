@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,59 +24,66 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include "core/const.h"
-#include "core/conf.h"
-#include "gui/elems/basics/choice.h"
 #include "tabMisc.h"
+#include "core/conf.h"
+#include "core/const.h"
+#include <FL/Fl_Tooltip.H>
 
-
-namespace giada {
-namespace v
+namespace giada::v
 {
 geTabMisc::geTabMisc(int X, int Y, int W, int H)
-: Fl_Group(X, Y, W, H, "Misc")
+: geGroup(X, Y)
+, m_debugMsg(W - 230, 9, 230, 20, "Debug messages")
+, m_tooltips(W - 230, 37, 230, 20, "Tooltips")
 {
-	begin();
-	debugMsg = new geChoice(x()+w()-230, y()+9, 230, 20, "Debug messages");
-	end();
+	add(&m_debugMsg);
+	add(&m_tooltips);
 
-	debugMsg->add("(disabled)");
-	debugMsg->add("To standard output");
-	debugMsg->add("To file");
+	m_debugMsg.add("Disabled");
+	m_debugMsg.add("To standard output");
+	m_debugMsg.add("To file");
 
+	m_tooltips.add("Disabled");
+	m_tooltips.add("Enabled");
+
+	switch (m::conf::conf.logMode)
+	{
+	case LOG_MODE_MUTE:
+		m_debugMsg.value(0);
+		break;
+	case LOG_MODE_STDOUT:
+		m_debugMsg.value(1);
+		break;
+	case LOG_MODE_FILE:
+		m_debugMsg.value(2);
+		break;
+	}
+
+	m_tooltips.value(m::conf::conf.showTooltips);
+
+	copy_label("Misc");
 	labelsize(G_GUI_FONT_SIZE_BASE);
 	selection_color(G_COLOR_GREY_4);
-
-	switch (m::conf::conf.logMode) {
-		case LOG_MODE_MUTE:
-			debugMsg->value(0);
-			break;
-		case LOG_MODE_STDOUT:
-			debugMsg->value(1);
-			break;
-		case LOG_MODE_FILE:
-			debugMsg->value(2);
-			break;
-	}
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
 void geTabMisc::save()
 {
-	switch(debugMsg->value()) {
-		case 0:
-			m::conf::conf.logMode = LOG_MODE_MUTE;
-			break;
-		case 1:
-			m::conf::conf.logMode = LOG_MODE_STDOUT;
-			break;
-		case 2:
-			m::conf::conf.logMode = LOG_MODE_FILE;
-			break;
+	switch (m_debugMsg.value())
+	{
+	case 0:
+		m::conf::conf.logMode = LOG_MODE_MUTE;
+		break;
+	case 1:
+		m::conf::conf.logMode = LOG_MODE_STDOUT;
+		break;
+	case 2:
+		m::conf::conf.logMode = LOG_MODE_FILE;
+		break;
 	}
+
+	m::conf::conf.showTooltips = m_tooltips.value();
+	Fl_Tooltip::enable(m_tooltips.value());
 }
-}} // giada::v::
+} // namespace giada::v

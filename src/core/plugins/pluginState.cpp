@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,12 +26,10 @@
 
 #ifdef WITH_VST
 
-#include <cassert>
 #include "pluginState.h"
+#include "core/const.h"
 
-
-namespace giada {
-namespace m 
+namespace giada::m
 {
 PluginState::PluginState(juce::MemoryBlock&& data)
 : m_data(std::move(data))
@@ -40,35 +38,31 @@ PluginState::PluginState(juce::MemoryBlock&& data)
 
 /* -------------------------------------------------------------------------- */
 
-
 PluginState::PluginState(const std::string& base64)
 {
 	bool res = m_data.fromBase64Encoding(base64);
-	assert(res);
+	if (!res)
+		G_DEBUG("Error while loading plug-in state!");
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string PluginState::asBase64() const
 {
 	return m_data.toBase64Encoding().toStdString();
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-const void* PluginState::getData() const 
+const void* PluginState::getData() const
 {
 	return m_data.getData();
 }
-
 
 size_t PluginState::getSize() const
 {
 	return m_data.getSize();
 }
-}}
+} // namespace giada::m
 
 #endif // #ifdef WITH_VST

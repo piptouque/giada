@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,16 +24,14 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_PIANO_ITEM_H
 #define GE_PIANO_ITEM_H
 
-
 #include "baseAction.h"
 
-
-namespace giada {
-namespace m 
+namespace giada
+{
+namespace m
 {
 struct Action;
 }
@@ -44,21 +42,19 @@ class gdActionEditor;
 class gePianoItem : public geBaseAction
 {
 public:
-
 	gePianoItem(int x, int y, int w, int h, m::Action a1, m::Action a2);
- 
+
 	void draw() override;
 
 	bool isResizable() const;
 
-private:
+  private:
+	bool m_ringLoop;
+	bool m_orphaned;
 
-    bool m_ringLoop;
-    bool m_orphaned;
-
-    Pixel calcVelocityH() const;
+	Pixel calcVelocityH() const;
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif

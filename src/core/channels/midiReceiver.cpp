@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,85 +24,30 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
 
-
+#include "midiReceiver.h"
+#include "core/channels/channel.h"
+#include "core/eventDispatcher.h"
 #include "core/mixer.h"
 #include "core/plugins/pluginHost.h"
-#include "core/channels/state.h"
-#include "midiReceiver.h"
 
-
-namespace giada {
-namespace m 
+namespace giada::m::midiReceiver
 {
-MidiReceiver::MidiReceiver(ChannelState* c)
-: state           (std::make_unique<MidiReceiverState>())
-, m_channelState  (c)
+namespace
 {
+void sendToPlugins_(const channel::Data& ch, const MidiEvent& e, Frame localFrame)
+{
+	juce::MidiMessage message = juce::MidiMessage(
+	    e.getStatus(),
+	    e.getNote(),
+	    e.getVelocity());
+	ch.buffer->midi.addEvent(message, localFrame);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-MidiReceiver::MidiReceiver(const patch::Channel& /*p*/, ChannelState* c)
-: state           (std::make_unique<MidiReceiverState>())
-, m_channelState  (c)
-{
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-MidiReceiver::MidiReceiver(const MidiReceiver& /*o*/, ChannelState* c)
-: state           (std::make_unique<MidiReceiverState>())
-, m_channelState  (c)
-{
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiReceiver::parse(const mixer::Event& e) const
-{
-	switch (e.type) {
-
-		case mixer::EventType::MIDI:
-			parseMidi(e.action.event); break;
-
-		case mixer::EventType::ACTION:
-			if (m_channelState->isPlaying())
-				sendToPlugins(e.action.event, e.delta);
-			break;
-		
-		case mixer::EventType::KEY_KILL:
-		case mixer::EventType::SEQUENCER_STOP:
-		case mixer::EventType::SEQUENCER_REWIND:
-			sendToPlugins(MidiEvent(G_MIDI_ALL_NOTES_OFF), 0); break;
-		
-		default: break;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiReceiver::render(const std::vector<ID>& pluginIds) const
-{
-	pluginHost::processStack(m_channelState->buffer, pluginIds, &state->midiBuffer);
-	state->midiBuffer.clear();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiReceiver::parseMidi(const MidiEvent& e) const
+void parseMidi_(const channel::Data& ch, const MidiEvent& e)
 {
 	/* Now all messages are turned into Channel-0 messages. Giada doesn't care 
 	about holding MIDI channel information. Moreover, having all internal 
@@ -110,22 +55,51 @@ void MidiReceiver::parseMidi(const MidiEvent& e) const
 
 	MidiEvent flat(e);
 	flat.setChannel(0);
-	sendToPlugins(flat, /*delta=*/0); 
+	sendToPlugins_(ch, flat, /*delta=*/0);
 }
+} // namespace
 
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+void react(const channel::Data& ch, const eventDispatcher::Event& e)
+{
+	switch (e.type)
+	{
+
+	case eventDispatcher::EventType::MIDI:
+		parseMidi_(ch, std::get<Action>(e.data).event);
+		break;
+
+	case eventDispatcher::EventType::KEY_KILL:
+	case eventDispatcher::EventType::SEQUENCER_STOP:
+	case eventDispatcher::EventType::SEQUENCER_REWIND:
+		sendToPlugins_(ch, MidiEvent(G_MIDI_ALL_NOTES_OFF), 0);
+		break;
+
+	default:
+		break;
+	}
+}
 
 /* -------------------------------------------------------------------------- */
 
-
-void MidiReceiver::sendToPlugins(const MidiEvent& e, Frame localFrame) const
+void advance(const channel::Data& ch, const sequencer::Event& e)
 {
-	juce::MidiMessage message = juce::MidiMessage(
-		e.getStatus(), 
-		e.getNote(), 
-		e.getVelocity());
-	state->midiBuffer.addEvent(message, localFrame);
+	if (e.type == sequencer::EventType::ACTIONS && ch.isPlaying())
+		for (const Action& action : *e.actions)
+			if (action.channelId == ch.id)
+				sendToPlugins_(ch, action.event, e.delta);
 }
-}} // giada::m::
 
+/* -------------------------------------------------------------------------- */
+
+void render(const channel::Data& ch)
+{
+	pluginHost::processStack(ch.buffer->audio, ch.plugins, &ch.buffer->midi);
+	ch.buffer->midi.clear();
+}
+} // namespace giada::m::midiReceiver
 
 #endif // WITH_VST

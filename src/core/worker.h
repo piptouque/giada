@@ -2,8 +2,6 @@
  *
  * Giada - Your Hardcore Loopmachine
  *
- * beatMeter
- *
  * -----------------------------------------------------------------------------
  *
  * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
@@ -26,32 +24,28 @@
  *
  * -------------------------------------------------------------------------- */
 
+#ifndef G_WORKER_H
+#define G_WORKER_H
 
-#ifndef GE_BEAT_METER_H
-#define GE_BEAT_METER_H
+#include <atomic>
+#include <functional>
+#include <thread>
 
-
-#include <FL/Fl_Box.H>
-
-
-namespace giada {
-namespace v
+namespace giada
 {
-class geBeatMeter : public Fl_Box
+class Worker
 {
 public:
+	Worker();
+	~Worker();
 
-	geBeatMeter(int x, int y, int w, int h);
-	
-	void draw() override;
+	void start(std::function<void()> f, int sleep);
+	void stop();
 
-	void refresh();
-
-private:
-
-    Fl_Color getCursorColor();
+  private:
+	std::thread       m_thread;
+	std::atomic<bool> m_running;
 };
-}} // giada::v::
-
+} // namespace giada
 
 #endif

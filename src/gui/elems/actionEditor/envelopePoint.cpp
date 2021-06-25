@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,26 +24,24 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <FL/fl_draw.H>
-#include "core/const.h"
 #include "envelopePoint.h"
+#include "core/const.h"
+#include <FL/fl_draw.H>
 
-
-namespace giada {
+namespace giada
+{
 namespace v
 {
 geEnvelopePoint::geEnvelopePoint(Pixel X, Pixel Y, m::Action a)
-	: geBaseAction(X, Y, SIDE, SIDE, /*resizable=*/false, a, {})
+: geBaseAction(X, Y, SIDE, SIDE, /*resizable=*/false, a, {})
 {
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void geEnvelopePoint::draw()
 {
 	fl_rectf(x(), y(), w(), h(), hovered ? G_COLOR_LIGHT_2 : G_COLOR_LIGHT_1);
 }
-}} // giada::v::
+} // namespace v
+} // namespace giada

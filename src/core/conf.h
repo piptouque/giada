@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,34 +24,31 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CONF_H
 #define G_CONF_H
 
-
-#include <string>
-#include "utils/gui.h"
 #include "core/const.h"
 #include "core/types.h"
+#include "utils/gui.h"
+#include <string>
 
-
-namespace giada {
-namespace m {
-namespace conf
+namespace giada::m::conf
 {
 struct Conf
 {
-	int  logMode         = LOG_MODE_MUTE;
-	int  soundSystem     = G_DEFAULT_SOUNDSYS;
-	int  soundDeviceOut  = G_DEFAULT_SOUNDDEV_OUT;
-	int  soundDeviceIn   = G_DEFAULT_SOUNDDEV_IN;
-	int  channelsOut     = 0;
-	int  channelsInCount = 0;
-	int  channelsInStart = 0;
-	int  samplerate      = G_DEFAULT_SAMPLERATE;
-	int  buffersize      = G_DEFAULT_BUFSIZE;
-	bool limitOutput     = false;
-	int  rsmpQuality     = 0;
+	int  logMode          = LOG_MODE_MUTE;
+	bool showTooltips     = true;
+	int  soundSystem      = G_DEFAULT_SOUNDSYS;
+	int  soundDeviceOut   = G_DEFAULT_SOUNDDEV_OUT;
+	int  soundDeviceIn    = G_DEFAULT_SOUNDDEV_IN;
+	int  channelsOutCount = G_MAX_IO_CHANS;
+	int  channelsOutStart = 0;
+	int  channelsInCount  = 1;
+	int  channelsInStart  = 0;
+	int  samplerate       = G_DEFAULT_SAMPLERATE;
+	int  buffersize       = G_DEFAULT_BUFSIZE;
+	bool limitOutput      = false;
+	int  rsmpQuality      = 0;
 
 	int         midiSystem  = 0;
 	int         midiPortOut = G_DEFAULT_MIDI_PORT_OUT;
@@ -76,8 +73,8 @@ struct Conf
 	int mainWindowH = G_MIN_GUI_HEIGHT;
 
 	int         browserX = u::gui::centerWindowX(G_DEFAULT_SUBWINDOW_W);
-	int         browserY = u::gui::centerWindowY(G_DEFAULT_SUBWINDOW_H); 
-	int         browserW = G_DEFAULT_SUBWINDOW_W; 
+	int         browserY = u::gui::centerWindowY(G_DEFAULT_SUBWINDOW_H);
+	int         browserW = G_DEFAULT_SUBWINDOW_W;
 	int         browserH = G_DEFAULT_SUBWINDOW_H;
 	int         browserPosition;
 	int         browserLastValue;
@@ -85,36 +82,37 @@ struct Conf
 
 	int actionEditorY       = u::gui::centerWindowY(G_DEFAULT_SUBWINDOW_H);
 	int actionEditorX       = u::gui::centerWindowX(G_DEFAULT_SUBWINDOW_W);
-	int actionEditorW       = G_DEFAULT_SUBWINDOW_W; 
-	int actionEditorH       = G_DEFAULT_SUBWINDOW_H; 
+	int actionEditorW       = G_DEFAULT_SUBWINDOW_W;
+	int actionEditorH       = G_DEFAULT_SUBWINDOW_H;
 	int actionEditorZoom    = 100;
 	int actionEditorGridVal = 0;
 	int actionEditorGridOn  = false;
 
 	int sampleEditorX;
 	int sampleEditorY;
-	int sampleEditorW = G_DEFAULT_SUBWINDOW_W;
-	int sampleEditorH = G_DEFAULT_SUBWINDOW_H;
+	int sampleEditorW       = G_DEFAULT_SUBWINDOW_W;
+	int sampleEditorH       = G_DEFAULT_SUBWINDOW_H;
 	int sampleEditorGridVal = 0;
 	int sampleEditorGridOn  = false;
 
-	int midiInputX; 
-	int midiInputY; 
-	int midiInputW = G_DEFAULT_SUBWINDOW_W; 
+	int midiInputX;
+	int midiInputY;
+	int midiInputW = G_DEFAULT_SUBWINDOW_W;
 	int midiInputH = G_DEFAULT_SUBWINDOW_H;
 
 	int pianoRollY = -1;
 	int pianoRollH = 422;
 
-	int sampleActionEditorH = 40; 
-	int velocityEditorH     = 40; 
-	int envelopeEditorH     = 40; 
+	int sampleActionEditorH = 40;
+	int velocityEditorH     = 40;
+	int envelopeEditorH     = 40;
 
 	int pluginListX;
 	int pluginListY;
 
 	RecTriggerMode recTriggerMode  = RecTriggerMode::NORMAL;
 	float          recTriggerLevel = G_DEFAULT_REC_TRIGGER_LEVEL;
+	InputRecMode   inputRecMode    = InputRecMode::FREE;
 
 	bool     midiInEnabled    = false;
 	int      midiInFilter     = -1;
@@ -130,28 +128,24 @@ struct Conf
 
 #ifdef WITH_VST
 
-	int pluginChooserX; 
+	int pluginChooserX;
 	int pluginChooserY;
-	int pluginChooserW   = G_DEFAULT_SUBWINDOW_W; 
+	int pluginChooserW   = G_DEFAULT_SUBWINDOW_W;
 	int pluginChooserH   = G_DEFAULT_SUBWINDOW_H;
 	int pluginSortMethod = 0;
 
 #endif
 };
 
-
 /* -------------------------------------------------------------------------- */
-
 
 extern Conf conf;
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void init();
 bool read();
 bool write();
-}}} // giada::m::conf::
+} // namespace giada::m::conf
 
 #endif

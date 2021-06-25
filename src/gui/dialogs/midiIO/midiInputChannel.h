@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,43 +26,36 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_MIDI_INPUT_CHANNEL_H
 #define GD_MIDI_INPUT_CHANNEL_H
-
 
 #include "glue/io.h"
 #include "gui/elems/midiIO/midiLearnerPack.h"
 #include "midiInputBase.h"
 
-
 class geCheck;
 
-
-namespace giada {
-namespace v 
+namespace giada
+{
+namespace v
 {
 class geChoice;
 class geScrollPack;
 class geChannelLearnerPack : public geMidiLearnerPack
 {
 public:
-
 	geChannelLearnerPack(int x, int y, const c::io::Channel_InputData& d);
 
 	void update(const c::io::Channel_InputData&);
 };
 
-
 /* -------------------------------------------------------------------------- */
-
 
 #ifdef WITH_VST
 
 class gePluginLearnerPack : public geMidiLearnerPack
 {
 public:
-
 	gePluginLearnerPack(int x, int y, const c::io::PluginData&);
 
 	void update(const c::io::PluginData&, bool enabled);
@@ -70,36 +63,31 @@ public:
 
 #endif
 
-
 /* -------------------------------------------------------------------------- */
-
-
 
 class gdMidiInputChannel : public gdMidiInputBase
 {
 public:
-
 	gdMidiInputChannel(ID channelId);
 
 	void rebuild() override;
 
-private:
-
+  private:
 	static void cb_enable(Fl_Widget* /*w*/, void* p);
 	static void cb_setChannel(Fl_Widget* /*w*/, void* p);
 	static void cb_veloAsVol(Fl_Widget* /*w*/, void* p);
-	void cb_enable();
-	void cb_setChannel();
-	void cb_veloAsVol();
+	void        cb_enable();
+	void        cb_setChannel();
+	void        cb_veloAsVol();
 
 	ID m_channelId;
-	
+
 	c::io::Channel_InputData m_data;
 
 	geScrollPack* m_container;
 	geCheck*      m_veloAsVol;
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif

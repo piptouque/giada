@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,36 +24,31 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
 
 #ifndef G_PLUGIN_STATE_H
 #define G_PLUGIN_STATE_H
 
-
-#include <string>
 #include "deps/juce-config.h"
+#include <string>
 
-
-namespace giada {
-namespace m 
+namespace giada::m
 {
 class PluginState
 {
 public:
+	PluginState() = default; // Invalid state
+	PluginState(juce::MemoryBlock&& data);
+	PluginState(const std::string& base64);
 
-    PluginState(juce::MemoryBlock&& data);
-    PluginState(const std::string& base64);
-
-    std::string asBase64() const;
-    const void* getData() const;
-    size_t getSize() const;
+	std::string asBase64() const;
+	const void* getData() const;
+	size_t      getSize() const;
 
 private:
-
-    juce::MemoryBlock m_data;
+	juce::MemoryBlock m_data;
 };
-}}
+} // namespace giada::m
 
 #endif
 

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,46 +24,44 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_PITCH_TOOL_H
 #define GE_PITCH_TOOL_H
 
-
-#include "gui/elems/basics/pack.h"
 #include "gui/elems/basics/box.h"
+#include "gui/elems/basics/button.h"
 #include "gui/elems/basics/dial.h"
 #include "gui/elems/basics/input.h"
-#include "gui/elems/basics/button.h"
+#include "gui/elems/basics/pack.h"
 
-
-namespace giada {
-namespace v 
+namespace giada::c::sampleEditor
+{
+struct Data;
+}
+namespace giada::v
 {
 class gePitchTool : public gePack
 {
 public:
-
 	gePitchTool(const c::sampleEditor::Data& d, int x, int y);
 
 	void rebuild(const c::sampleEditor::Data& d);
-	void update(float v, bool isDial=false);
+	void update(float v, bool isDial = false);
 
-private:
-
-	static void cb_setPitch      (Fl_Widget* /*w*/, void* p);
-	static void cb_setPitchToBar (Fl_Widget* /*w*/, void* p);
+  private:
+	static void cb_setPitch(Fl_Widget* /*w*/, void* p);
+	static void cb_setPitchToBar(Fl_Widget* /*w*/, void* p);
 	static void cb_setPitchToSong(Fl_Widget* /*w*/, void* p);
-	static void cb_setPitchHalf  (Fl_Widget* /*w*/, void* p);
+	static void cb_setPitchHalf(Fl_Widget* /*w*/, void* p);
 	static void cb_setPitchDouble(Fl_Widget* /*w*/, void* p);
-	static void cb_resetPitch    (Fl_Widget* /*w*/, void* p);
-	static void cb_setPitchNum   (Fl_Widget* /*w*/, void* p);
-	void cb_setPitch();
-	void cb_setPitchToBar();
-	void cb_setPitchToSong();
-	void cb_setPitchHalf();
-	void cb_setPitchDouble();
-	void cb_resetPitch();
-	void cb_setPitchNum();
+	static void cb_resetPitch(Fl_Widget* /*w*/, void* p);
+	static void cb_setPitchNum(Fl_Widget* /*w*/, void* p);
+	void        cb_setPitch();
+	void        cb_setPitchToBar();
+	void        cb_setPitchToSong();
+	void        cb_setPitchHalf();
+	void        cb_setPitchDouble();
+	void        cb_resetPitch();
+	void        cb_setPitchNum();
 
 	const c::sampleEditor::Data* m_data;
 
@@ -76,7 +74,6 @@ private:
 	geButton m_pitchDouble;
 	geButton m_pitchReset;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

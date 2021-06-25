@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,29 +24,26 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_TAB_MISC_H
 #define GE_TAB_MISC_H
 
+#include "gui/elems/basics/choice.h"
+#include "gui/elems/basics/group.h"
 
-#include <FL/Fl_Group.H>
-
-
-namespace giada {
-namespace v
+namespace giada::v
 {
 class geChoice;
-class geTabMisc : public Fl_Group
+class geTabMisc : public geGroup
 {
 public:
-
 	geTabMisc(int x, int y, int w, int h);
 
 	void save();
 
-	geChoice* debugMsg;
+  private:
+	geChoice m_debugMsg;
+	geChoice m_tooltips;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

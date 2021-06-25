@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,36 +26,33 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_MIDI_OUTPUT_MIDI_CH_H
 #define GD_MIDI_OUTPUT_MIDI_CH_H
 
-
 #include "midiOutputBase.h"
 
-
-namespace giada {
-namespace v 
+namespace giada
 {
+namespace v
+{
+class geChoice;
 class gdMidiOutputMidiCh : public gdMidiOutputBase
 {
 public:
-
 	gdMidiOutputMidiCh(ID channelId);
 
 	void rebuild() override;
 
-private:
-
-	static void cb_enableOut (Fl_Widget* /*w*/, void* p);
+  private:
+	static void cb_enableOut(Fl_Widget* /*w*/, void* p);
 	static void cb_setChannel(Fl_Widget* /*w*/, void* p);
-	void cb_enableOut();
-	void cb_setChannel();
+	void        cb_enableOut();
+	void        cb_setChannel();
 
 	geCheck*  m_enableOut;
 	geChoice* m_chanListOut;
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,22 +24,21 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <cassert>
-#include <algorithm>
 #include "audioBuffer.h"
+#include <algorithm>
+#include <cassert>
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
 AudioBuffer::AudioBuffer()
-: m_data    (nullptr)
-, m_size    (0)
+: m_data(nullptr)
+, m_size(0)
 , m_channels(0)
+, m_viewing(false)
 {
 }
 
+/* -------------------------------------------------------------------------- */
 
 AudioBuffer::AudioBuffer(Frame size, int channels)
 : AudioBuffer()
@@ -47,63 +46,87 @@ AudioBuffer::AudioBuffer(Frame size, int channels)
 	alloc(size, channels);
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-AudioBuffer::AudioBuffer(const AudioBuffer& o)
-: m_data    (new float[o.m_size * o.m_channels])
-, m_size    (o.m_size)
-, m_channels(o.m_channels)
+AudioBuffer::AudioBuffer(float* data, Frame size, int channels)
+: m_data(data)
+, m_size(size)
+, m_channels(channels)
+, m_viewing(true)
 {
-	std::copy(o.m_data, o.m_data + (o.m_size * o.m_channels), m_data); 
+	assert(channels <= NUM_CHANS);
 }
 
+/* -------------------------------------------------------------------------- */
+
+AudioBuffer::AudioBuffer(const AudioBuffer& o)
+{
+	copy(o);
+}
 
 /* -------------------------------------------------------------------------- */
 
+AudioBuffer::AudioBuffer(AudioBuffer&& o)
+{
+	move(std::move(o));
+}
+
+/* -------------------------------------------------------------------------- */
 
 AudioBuffer::~AudioBuffer()
 {
-	free();
+	if (!m_viewing)
+		free();
 }
-
 
 /* -------------------------------------------------------------------------- */
 
+AudioBuffer& AudioBuffer::operator=(const AudioBuffer& o)
+{
+	if (this == &o)
+		return *this;
+	copy(o);
+	return *this;
+}
 
-float* AudioBuffer::operator [](Frame offset) const
+/* -------------------------------------------------------------------------- */
+
+AudioBuffer& AudioBuffer::operator=(AudioBuffer&& o)
+{
+	if (this == &o)
+		return *this;
+	move(std::move(o));
+	return *this;
+}
+
+/* -------------------------------------------------------------------------- */
+
+float* AudioBuffer::operator[](Frame offset) const
 {
 	assert(m_data != nullptr);
 	assert(offset < m_size);
 	return m_data + (offset * m_channels);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void AudioBuffer::clear(Frame a, Frame b)
 {
 	if (m_data == nullptr)
 		return;
-	if (b == -1) b = m_size;
+	if (b == -1)
+		b = m_size;
 	std::fill_n(m_data + (a * m_channels), (b - a) * m_channels, 0.0);
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-Frame AudioBuffer::countFrames()   const { return m_size; }
-int   AudioBuffer::countSamples()  const { return m_size * m_channels; }
+Frame AudioBuffer::countFrames() const { return m_size; }
+int   AudioBuffer::countSamples() const { return m_size * m_channels; }
 int   AudioBuffer::countChannels() const { return m_channels; }
-bool  AudioBuffer::isAllocd()      const { return m_data != nullptr; }
-
-
+bool  AudioBuffer::isAllocd() const { return m_data != nullptr; }
 
 /* -------------------------------------------------------------------------- */
-
 
 float AudioBuffer::getPeak() const
 {
@@ -113,9 +136,7 @@ float AudioBuffer::getPeak() const
 	return peak;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void AudioBuffer::alloc(Frame size, int channels)
 {
@@ -124,98 +145,127 @@ void AudioBuffer::alloc(Frame size, int channels)
 	free();
 	m_size     = size;
 	m_channels = channels;
-	m_data     = new float[m_size * m_channels];	
+	m_data     = new float[m_size * m_channels];
 	clear();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void AudioBuffer::free()
 {
+	if (m_data == nullptr)
+		return;
 	delete[] m_data;
-	setData(nullptr, 0, 0);
+	m_data     = nullptr;
+	m_size     = 0;
+	m_channels = 0;
+	m_viewing  = false;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void AudioBuffer::setData(float* data, Frame size, int channels)
+void AudioBuffer::sum(const AudioBuffer& b, Frame framesToCopy, Frame srcOffset,
+    Frame destOffset, float gain, Pan pan)
 {
-	assert(channels <= NUM_CHANS);
-
-	m_data     = data;
-	m_size     = size;
-	m_channels = channels;
+	copyData<Operation::SUM>(b, framesToCopy, srcOffset, destOffset, gain, pan);
 }
 
+void AudioBuffer::set(const AudioBuffer& b, Frame framesToCopy, Frame srcOffset,
+    Frame destOffset, float gain, Pan pan)
+{
+	copyData<Operation::SET>(b, framesToCopy, srcOffset, destOffset, gain, pan);
+}
+
+void AudioBuffer::sum(const AudioBuffer& b, float gain, Pan pan)
+{
+	copyData<Operation::SUM>(b, -1, 0, 0, gain, pan);
+}
+
+void AudioBuffer::set(const AudioBuffer& b, float gain, Pan pan)
+{
+	copyData<Operation::SET>(b, -1, 0, 0, gain, pan);
+}
 
 /* -------------------------------------------------------------------------- */
 
-
-void AudioBuffer::moveData(AudioBuffer& b)
+template <AudioBuffer::Operation O>
+void AudioBuffer::copyData(const AudioBuffer& b, Frame framesToCopy,
+    Frame srcOffset, Frame destOffset, float gain, Pan pan)
 {
-	assert(b.countChannels() <= NUM_CHANS);
+	const int  srcChannels  = b.countChannels();
+	const int  destChannels = countChannels();
+	const bool sameChannels = srcChannels == destChannels;
 
-	free();
-	m_data     = b[0];
-	m_size     = b.countFrames();
-	m_channels = b.countChannels();
-	b.setData(nullptr, 0, 0);
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void AudioBuffer::copyData(const float* data, Frame frames, int channels, int offset)
-{
 	assert(m_data != nullptr);
-	assert(frames <= m_size - offset);
+	assert(destOffset >= 0 && destOffset < m_size);
+	assert(srcChannels <= destChannels);
 
-	if (channels < NUM_CHANS) // i.e. one channel, mono
-		for (int i = offset, k = 0; i < m_size; i++, k++)
-			for (int j = 0; j < countChannels(); j++)
-				(*this)[i][j] = data[k];
-	else
-	if (channels == NUM_CHANS)
-		std::copy_n(data, frames * channels, m_data + (offset * channels));
-	else
-		assert(false);
+	/* Make sure the amount of frames to copy lies within the current buffer 
+	size. */
+
+	framesToCopy = framesToCopy == -1 ? b.countFrames() : framesToCopy;
+	framesToCopy = std::min(framesToCopy, m_size - destOffset);
+
+	/* Case 1) source has less channels than this one: brutally spread source's
+	channel 0 over this one (TODO - maybe mixdown source channels first?)
+	   Case 2) source has same amount of channels: copy them 1:1. */
+
+	for (int destF = 0, srcF = srcOffset; destF < framesToCopy && destF < b.countFrames(); destF++, srcF++)
+	{
+		for (int ch = 0; ch < destChannels; ch++)
+		{
+			if constexpr (O == Operation::SUM)
+				sum(destF + destOffset, ch, b[srcF][sameChannels ? ch : 0] * gain * pan[ch]);
+			else
+				set(destF + destOffset, ch, b[srcF][sameChannels ? ch : 0] * gain * pan[ch]);
+		}
+	}
 }
-
-
-void AudioBuffer::copyData(const AudioBuffer& b, float gain)
-{
-	copyData(b[0], b.countFrames(), b.countChannels());
-	if (gain != 1.0f)
-		applyGain(gain);
-}
-
 
 /* -------------------------------------------------------------------------- */
-
-
-void AudioBuffer::addData(const AudioBuffer& b, float gain, Pan pan)
-{
-	assert(m_data != nullptr);
-	assert(countFrames() <= b.countFrames());
-	assert(b.countChannels() <= NUM_CHANS);
-
-	for (int i = 0; i < countFrames(); i++)
-		for (int j = 0; j < countChannels(); j++)
-			(*this)[i][j] += b[i][j] * gain * pan[j];
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 
 void AudioBuffer::applyGain(float g)
 {
 	for (int i = 0; i < countSamples(); i++)
 		m_data[i] *= g;
 }
-}} // giada::m::
+
+/* -------------------------------------------------------------------------- */
+
+void AudioBuffer::sum(Frame f, int channel, float val) { (*this)[f][channel] += val; }
+void AudioBuffer::set(Frame f, int channel, float val) { (*this)[f][channel] = val; }
+
+/* -------------------------------------------------------------------------- */
+
+void AudioBuffer::move(AudioBuffer&& o)
+{
+	assert(o.countChannels() <= NUM_CHANS);
+
+	m_data     = o.m_data;
+	m_size     = o.m_size;
+	m_channels = o.m_channels;
+	m_viewing  = o.m_viewing;
+
+	o.m_data     = nullptr;
+	o.m_size     = 0;
+	o.m_channels = 0;
+	o.m_viewing  = false;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void AudioBuffer::copy(const AudioBuffer& o)
+{
+	m_data     = new float[o.m_size * o.m_channels];
+	m_size     = o.m_size;
+	m_channels = o.m_channels;
+	m_viewing  = o.m_viewing;
+
+	std::copy(o.m_data, o.m_data + (o.m_size * o.m_channels), m_data);
+}
+
+/* -------------------------------------------------------------------------- */
+
+template void AudioBuffer::copyData<AudioBuffer::Operation::SUM>(const AudioBuffer&, Frame, Frame, Frame, float, Pan);
+template void AudioBuffer::copyData<AudioBuffer::Operation::SET>(const AudioBuffer&, Frame, Frame, Frame, float, Pan);
+} // namespace giada::m

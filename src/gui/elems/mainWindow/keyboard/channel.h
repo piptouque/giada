@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,30 +24,24 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_CHANNEL_H
 #define GE_CHANNEL_H
 
-
-#include <FL/Fl_Group.H>
-#include "glue/channel.h"
 #include "core/types.h"
+#include "glue/channel.h"
+#include <FL/Fl_Group.H>
 
-
-class geChannelStatus;
 class geButton;
 class geDial;
-class geStatusButton;
 
-
-namespace giada {
-namespace v
+namespace giada::v
 {
+class geChannelStatus;
+class geStatusButton;
 class geChannelButton;
 class geChannel : public Fl_Group
 {
 public:
-
 	geChannel(int x, int y, int w, int h, c::channel::Data d);
 
 	void draw() override;
@@ -72,7 +66,7 @@ public:
 	Returns a reference to the internal data. Read-only. */
 
 	const c::channel::Data& getData() const;
- 
+
 	geStatusButton*  playButton;
 	geButton*        arm;
 	geChannelStatus* status;
@@ -81,11 +75,10 @@ public:
 	geStatusButton*  solo;
 	geDial*          vol;
 #ifdef WITH_VST
-	geStatusButton*  fx;
+	geStatusButton* fx;
 #endif
 
 protected:
-
 	/* Define some breakpoints for dynamic resize. BREAK_DELTA: base amount of
 	pixels to shrink sampleButton. */
 
@@ -132,7 +125,6 @@ protected:
 
 	c::channel::Data m_channel;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

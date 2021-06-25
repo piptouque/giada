@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,10 +26,8 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_UTILS_COCOA_H
 #define G_UTILS_COCOA_H
-
 
 /* fl_xid() from FLTK returns a pointer to NSWindow, but plugins on OS X want a
 pointer to NSView. The function does the hard conversion. */
@@ -41,6 +39,5 @@ fixing the positioning.
 TODO temporarily disabled: it does not work. */
 
 //void cocoa_setWindowSize(void *p, int w, int h);
-
 
 #endif

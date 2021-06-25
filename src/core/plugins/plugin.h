@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,53 +24,49 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
 
 #ifndef G_PLUGIN_H
 #define G_PLUGIN_H
 
-
-#include <vector>
-#include "deps/juce-config.h"
+#include "core/const.h"
+#include "core/midiLearnParam.h"
 #include "core/plugins/pluginHost.h"
 #include "core/plugins/pluginState.h"
-#include "core/midiLearnParam.h"
-#include "core/const.h"
+#include "deps/juce-config.h"
+#include <vector>
 
-
-namespace giada {
-namespace m 
+namespace giada::m
 {
 class Plugin : private juce::ComponentListener
 {
 public:
-
 	Plugin(ID id, const std::string& UID);
 	Plugin(ID id, std::unique_ptr<juce::AudioPluginInstance> p, double samplerate, int buffersize);
 	Plugin(const Plugin& o);
 	~Plugin();
+	/* TODO - mark is as non-copiable/movable*/
 
 	/* getUniqueId
 	Returns a string-based UID. */
 
-	std::string getUniqueId() const;
-	std::string getName() const;
-	bool hasEditor() const;
-	int getNumParameters() const;
-	float getParameter(int index) const;
-	std::string getParameterName(int index) const;
-	std::string getParameterText(int index) const;
-	std::string getParameterLabel(int index) const;
-	bool isSuspended() const;
-	bool isBypassed() const;
-	int getNumPrograms() const;
-	int getCurrentProgram() const;
-	std::string getProgramName(int index) const;
-	void setParameter(int index, float value) const;
-	void setCurrentProgram(int index) const;
-	bool acceptsMidi() const;
-	PluginState getState() const;
+	std::string                 getUniqueId() const;
+	std::string                 getName() const;
+	bool                        hasEditor() const;
+	int                         getNumParameters() const;
+	float                       getParameter(int index) const;
+	std::string                 getParameterName(int index) const;
+	std::string                 getParameterText(int index) const;
+	std::string                 getParameterLabel(int index) const;
+	bool                        isSuspended() const;
+	bool                        isBypassed() const;
+	int                         getNumPrograms() const;
+	int                         getCurrentProgram() const;
+	std::string                 getProgramName(int index) const;
+	void                        setParameter(int index, float value) const;
+	void                        setCurrentProgram(int index) const;
+	bool                        acceptsMidi() const;
+	PluginState                 getState() const;
 	juce::AudioProcessorEditor* createEditor() const;
 
 	/* process
@@ -81,7 +77,7 @@ public:
 	copy. */
 
 	void process(juce::AudioBuffer<float>& b, juce::MidiBuffer m);
-	
+
 	void setState(PluginState p);
 	void setBypass(bool b);
 
@@ -95,7 +91,7 @@ public:
 	external hardware. */
 
 	std::vector<MidiLearnParam> midiInParams;
-	
+
 	/* valid
 	A missing plug-in is loaded anyway, yet marked as 'invalid'. */
 
@@ -104,20 +100,20 @@ public:
 	std::function<void(int w, int h)> onEditorResize;
 
 private:
-
 #ifdef G_OS_WINDOWS
-	/* Fuck... */
-	#undef IN
-	#undef OUT
+/* Fuck... */
+#undef IN
+#undef OUT
 #endif
 
-	enum class BusType 
-	{ 
-		IN = true, OUT = false 
+	enum class BusType
+	{
+		IN  = true,
+		OUT = false
 	};
 
 	/* JUCE overrides. */
-	
+
 	void componentMovedOrResized(juce::Component& c, bool moved, bool resized) override;
 
 	juce::AudioProcessor::Bus* getMainBus(BusType b) const;
@@ -128,6 +124,7 @@ private:
 	int countMainOutChannels() const;
 
 	std::unique_ptr<juce::AudioPluginInstance> m_plugin;
+	std::unique_ptr<pluginHost::Info>          m_playHead;
 	juce::AudioBuffer<float>                   m_buffer;
 
 	std::atomic<bool> m_bypass;
@@ -136,8 +133,14 @@ private:
 	The original UID, used for missing plugins. */
 
 	std::string m_UID;
+
+	/* m_hasEditor
+	Cached boolean value that tells if the plug-in has editor. Some plug-ins
+	take ages to query it, better fetch the property during construction. */
+
+	bool m_hasEditor;
 };
-}} // giada::m::
+} // namespace giada::m
 
 #endif
 

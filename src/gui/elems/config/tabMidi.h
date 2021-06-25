@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,25 +24,21 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_TAB_MIDI_H
 #define GE_TAB_MIDI_H
 
-
 #include <FL/Fl_Group.H>
-
 
 class geCheck;
 
-
-namespace giada {
+namespace giada
+{
 namespace v
 {
 class geChoice;
 class geTabMidi : public Fl_Group
 {
 public:
-
 	geTabMidi(int x, int y, int w, int h);
 
 	void save();
@@ -53,19 +49,18 @@ public:
 	geChoice* midiMap;
 	geChoice* sync;
 
-private:
-
+  private:
 	void fetchSystems();
 	void fetchOutPorts();
 	void fetchInPorts();
 	void fetchMidiMaps();
 
 	static void cb_changeSystem(Fl_Widget* /*w*/, void* p);
-	void cb_changeSystem();
+	void        cb_changeSystem();
 
 	int systemInitValue;
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif

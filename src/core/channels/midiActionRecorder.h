@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,39 +24,24 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CHANNEL_MIDI_ACTION_RECORDER_H
 #define G_CHANNEL_MIDI_ACTION_RECORDER_H
 
-
-#include "core/types.h"
-
-
-namespace giada {
-namespace m
+namespace giada::m::channel
 {
-namespace mixer
+struct Data;
+}
+namespace giada::m::eventDispatcher
 {
 struct Event;
 }
-struct ChannelState;
-class MidiActionRecorder
+namespace giada::m::midiActionRecorder
 {
-public:
-
-    MidiActionRecorder(ChannelState*);
-    MidiActionRecorder(const MidiActionRecorder&, ChannelState* c=nullptr);
-
-    void parse(const mixer::Event& e) const;
-
-private:
-
-    bool canRecord() const;
-    void record(const MidiEvent& e) const;
-
-    ChannelState* m_channelState;
+struct Data
+{
 };
-}} // giada::m::
 
+void react(channel::Data& ch, const eventDispatcher::Event& e);
+} // namespace giada::m::midiActionRecorder
 
 #endif

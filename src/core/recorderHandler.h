@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,24 +24,23 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_RECORDER_HANDLER_H
 #define G_RECORDER_HANDLER_H
 
-
+#include "core/midiEvent.h"
+#include "core/recorder.h"
+#include "core/types.h"
 #include <unordered_set>
-#include "midiEvent.h"
 
-
-namespace giada {
-namespace m 
-{
-namespace patch
+namespace giada::m::patch
 {
 struct Action;
 }
+namespace giada::m
+{
 struct Action;
-namespace recorderHandler
+}
+namespace giada::m::recorderHandler
 {
 void init();
 
@@ -50,7 +49,7 @@ bool isBoundaryEnvelopeAction(const Action& a);
 /* updateBpm
 Changes actions position by calculating the new bpm value. */
 
-void updateBpm(float oldval, float newval, int oldquanto);
+void updateBpm(float ratio, int quantizerStep);
 
 /* updateSamplerate
 Changes actions position by taking in account the new samplerate. If 
@@ -84,9 +83,8 @@ void clearAllActions();
 /* (de)serializeActions
 Creates new Actions given the patch raw data and vice versa. */
 
-recorder::ActionMap deserializeActions(const std::vector<patch::Action>& as);
+recorder::ActionMap        deserializeActions(const std::vector<patch::Action>& as);
 std::vector<patch::Action> serializeActions(const recorder::ActionMap& as);
-}}} // giada::m::recorderHandler::
-
+} // namespace giada::m::recorderHandler
 
 #endif

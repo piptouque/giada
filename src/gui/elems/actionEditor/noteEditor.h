@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,23 +24,23 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_NOTE_EDITOR_H
 #define GE_NOTE_EDITOR_H
 
-
+#include "core/types.h"
 #include "gui/elems/basics/scroll.h"
 
-
-namespace giada {
-namespace v
+namespace giada::c::actionEditor
+{
+struct Data;
+}
+namespace giada::v
 {
 class gdMidiActionEditor;
 class gePianoRoll;
 class geNoteEditor : public geScroll
 {
 public:
-
 	geNoteEditor(Pixel x, Pixel y, gdMidiActionEditor* base);
 	~geNoteEditor();
 
@@ -49,10 +49,9 @@ public:
 
 	gePianoRoll* pianoRoll;
 
-private:
-
-    gdMidiActionEditor* m_base;
+  private:
+	gdMidiActionEditor* m_base;
 };
-}} // giada::v::
+} // namespace giada::v
 
 #endif

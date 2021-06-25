@@ -33,6 +33,8 @@ project(giada LANGUAGES CXX)
 
 list(APPEND SOURCES
 	src/main.cpp
+	src/core/worker.cpp
+	src/core/eventDispatcher.cpp
 	src/core/midiDispatcher.cpp
 	src/core/midiMapConf.cpp
 	src/core/midiEvent.cpp
@@ -42,6 +44,7 @@ list(APPEND SOURCES
 	src/core/kernelAudio.cpp
 	src/core/mixerHandler.cpp
 	src/core/sequencer.cpp
+	src/core/metronome.cpp
 	src/core/init.cpp
 	src/core/wave.cpp
 	src/core/waveFx.cpp
@@ -59,12 +62,12 @@ list(APPEND SOURCES
 	src/core/plugins/pluginManager.cpp
 	src/core/plugins/plugin.cpp
 	src/core/plugins/pluginState.cpp
-	src/core/channels/state.cpp
 	src/core/channels/sampleActionRecorder.cpp
 	src/core/channels/midiActionRecorder.cpp
 	src/core/channels/waveReader.cpp
 	src/core/channels/midiController.cpp
-	src/core/channels/sampleController.cpp
+	src/core/channels/sampleReactor.cpp
+	src/core/channels/sampleAdvancer.cpp
 	src/core/channels/samplePlayer.cpp
 	src/core/channels/audioReceiver.cpp
 	src/core/channels/midiLighter.cpp
@@ -85,10 +88,12 @@ list(APPEND SOURCES
 	src/glue/recorder.cpp
 	src/glue/sampleEditor.cpp
 	src/glue/actionEditor.cpp
+	src/glue/config.cpp
 	src/gui/dialogs/window.cpp
 	src/gui/dispatcher.cpp
 	src/gui/updater.cpp
 	src/gui/model.cpp
+	src/gui/drawing.cpp
 	src/gui/dialogs/keyGrabber.cpp
 	src/gui/dialogs/about.cpp
 	src/gui/dialogs/mainWindow.cpp
@@ -97,7 +102,6 @@ list(APPEND SOURCES
 	src/gui/dialogs/bpmInput.cpp
 	src/gui/dialogs/channelNameInput.cpp
 	src/gui/dialogs/config.cpp
-	src/gui/dialogs/devInfo.cpp
 	src/gui/dialogs/pluginList.cpp
 	src/gui/dialogs/pluginWindow.cpp
 	src/gui/dialogs/sampleEditor.cpp
@@ -146,7 +150,7 @@ list(APPEND SOURCES
 	src/gui/elems/mainWindow/mainMenu.cpp
 	src/gui/elems/mainWindow/mainTimer.cpp
 	src/gui/elems/mainWindow/mainTransport.cpp
-	src/gui/elems/mainWindow/beatMeter.cpp
+	src/gui/elems/mainWindow/sequencer.cpp
 	src/gui/elems/mainWindow/keyboard/channelMode.cpp
 	src/gui/elems/mainWindow/keyboard/channelButton.cpp
 	src/gui/elems/mainWindow/keyboard/channelStatus.cpp
@@ -178,7 +182,6 @@ list(APPEND SOURCES
 	src/gui/elems/basics/slider.cpp
 	src/gui/elems/basics/progress.cpp
 	src/gui/elems/basics/check.cpp
-	src/gui/elems/basics/radio.cpp
 	src/utils/log.cpp
 	src/utils/time.cpp
 	src/utils/math.cpp
@@ -250,12 +253,25 @@ endif()
 find_package(Threads REQUIRED)
 list(APPEND LIBRARIES ${Threads_LIBRARY})
 
+# pkg-config/pkgconf, required to find some external dependencies on some
+# platforms
+find_package(PkgConfig)
+
 # RtMidi
 
 find_package(RtMidi CONFIG)
 if (RtMidi_FOUND)
 	list(APPEND LIBRARIES RtMidi::rtmidi)
-else()
+	message("RtMidi library found in " ${RtMidi_DIR})
+elseif (PkgConfig_FOUND)
+	pkg_check_modules(RtMidi IMPORTED_TARGET rtmidi)
+	if (RtMidi_FOUND)
+		list(APPEND LIBRARIES PkgConfig::RtMidi)
+		message("RtMidi library found")
+	endif()
+endif()
+
+if (NOT RtMidi_FOUND)
 	# Fallback to find_library mode (in case rtmidi is too old). 
 	find_library(LIBRARY_RTMIDI NAMES rtmidi)
 	list(APPEND LIBRARIES ${LIBRARY_RTMIDI})
@@ -269,9 +285,8 @@ else()
 
 	find_path(LIBRARY_RTMIDI_INCLUDE_DIR RtMidi.h PATH_SUFFIXES rtmidi)
 	list(APPEND INCLUDE_DIRS ${LIBRARY_RTMIDI_INCLUDE_DIR})
+	message("RtMidi library found in " ${RtMidi_DIR})
 endif()
-
-message("RtMidi library found in " ${RtMidi_DIR})
 
 # FLTK 
 
@@ -287,7 +302,15 @@ find_package(SndFile CONFIG)
 if (SndFile_FOUND)
 	list(APPEND LIBRARIES SndFile::sndfile)
 	message("Libsndfile library found in " ${SndFile_DIR})
-else()
+elseif(PkgConfig_FOUND)
+	pkg_check_modules(SndFile IMPORTED_TARGET sndfile)
+	if (SndFile_FOUND)
+		list(APPEND LIBRARIES PkgConfig::SndFile)
+		message("Libsndfile library found")
+	endif()	
+endif()
+
+if (NOT SndFile_FOUND)
 	# Fallback to find_library mode (in case libsndfile is too old). 
 	find_library(LIBRARY_SNDFILE NAMES sndfile libsndfile libsndfile-1)
 	
@@ -324,13 +347,20 @@ else()
 endif()
 
 # Libsamplerate
-# TODO - new libsamplerate now provides CMake targets. Update it!
 
-find_library(LIBRARY_SAMPLERATE 
-	NAMES samplerate libsamplerate libsamplerate-0 liblibsamplerate-0
-	PATHS ${_VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET})
-list(APPEND LIBRARIES ${LIBRARY_SAMPLERATE})
-message("Libsamplerate library found in " ${LIBRARY_SAMPLERATE})
+find_package(SampleRate CONFIG)
+if (SampleRate_FOUND)
+	list(APPEND LIBRARIES SampleRate::samplerate)
+	message("Libsndfile library found in " ${SampleRate_DIR})
+else() 
+	# Fallback to find_library mode (in case Libsamplerate is too old). 
+	find_library(LIBRARY_SAMPLERATE 
+	    NAMES samplerate libsamplerate libsamplerate-0 liblibsamplerate-0
+	    PATHS ${_VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}
+		REQUIRED)
+	list(APPEND LIBRARIES ${LIBRARY_SAMPLERATE})
+	message("Libsamplerate library found in " ${LIBRARY_SAMPLERATE})
+endif()
 
 # Catch (if tests enabled)
 
@@ -431,6 +461,7 @@ elseif (DEFINED OS_FREEBSD)
 		${CMAKE_DL_LIBS} pthread)
 	
 	list(APPEND PREPROCESSOR_DEFS
+		WITH_AUDIO_JACK
 		__LINUX_PULSE__
 		__UNIX_JACK__)
 
@@ -500,7 +531,8 @@ target_compile_options(giada PRIVATE ${COMPILER_OPTIONS})
 # Install rules
 # ------------------------------------------------------------------------------
 
-install(TARGETS giada DESTINATION ${CMAKE_INSTALL_FULL_BINDI})
+include(GNUInstallDirs)
+install(TARGETS giada DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
 
 # ------------------------------------------------------------------------------
 # Extra

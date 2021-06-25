@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,29 +24,42 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_REC_MANAGER_H
 #define G_REC_MANAGER_H
 
-
 #include "core/types.h"
 
-
-namespace giada {
-namespace m {
-namespace recManager
+namespace giada::m::recManager
 {
 bool isRecording();
 bool isRecordingAction();
 bool isRecordingInput();
 
-void startActionRec(RecTriggerMode m);
+void startActionRec(RecTriggerMode);
 void stopActionRec();
-void toggleActionRec(RecTriggerMode m);
+void toggleActionRec(RecTriggerMode);
 
-bool startInputRec(RecTriggerMode m);
-void stopInputRec();
-bool toggleInputRec(RecTriggerMode m);
-}}} // giada::m::recManager
+bool startInputRec(RecTriggerMode, InputRecMode);
+void stopInputRec(InputRecMode);
+bool toggleInputRec(RecTriggerMode, InputRecMode);
+
+/* canEnableRecOnSignal
+True if rec-on-signal can be enabled: can't set it while sequencer is running,
+in order to prevent mistakes while live recording. */
+
+bool canEnableRecOnSignal();
+
+/* canEnableFreeInputRec
+True if free loop-length can be enabled: Can't set it if there's already a 
+filled Sample Channel in the current project. */
+
+bool canEnableFreeInputRec();
+
+/* refreshInputRecMode
+Makes sure the input rec mode stays the right one when a new Sample Channel is
+filled with data. See canEnableFreeInputRec() rationale. */
+
+void refreshInputRecMode();
+} // namespace giada::m::recManager
 
 #endif

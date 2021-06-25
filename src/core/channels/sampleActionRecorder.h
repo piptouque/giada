@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,54 +24,24 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CHANNEL_SAMPLE_ACTION_RECORDER_H
 #define G_CHANNEL_SAMPLE_ACTION_RECORDER_H
 
-
-#include "core/types.h"
-
-
-namespace giada {
-namespace m
+namespace giada::m::channel
 {
-namespace mixer
+struct Data;
+}
+namespace giada::m::eventDispatcher
 {
 struct Event;
 }
-struct ChannelState;
-
-/* SampleActionRecorder
-Records actions for channels and optionally manages the 'read action' state ('R' 
-button on Sample Channels). */
-
-class SampleActionRecorder
+namespace giada::m::sampleActionRecorder
 {
-public:
-
-    SampleActionRecorder(ChannelState*, SamplePlayerState*);
-    SampleActionRecorder(const SampleActionRecorder&, ChannelState* c=nullptr, 
-        SamplePlayerState* sc=nullptr);
-
-    void parse(const mixer::Event& e) const;
-
-private:
-    void record(int note) const;
-    void onKeyPress() const;
-    void onKeyRelease() const;
-    void onFirstBeat() const;
-
-    void toggleReadActions() const;
-    void startReadActions() const;
-    void stopReadActions(ChannelStatus curRecStatus) const;
-    void killReadActions() const;
-
-    bool canRecord() const;
-
-    ChannelState*      m_channelState;
-    SamplePlayerState* m_samplePlayerState;
+struct Data
+{
 };
-}} // giada::m::
 
+void react(channel::Data& ch, const eventDispatcher::Event& e);
+} // namespace giada::m::sampleActionRecorder
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,24 +24,20 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_MIXER_HANDLER_H
 #define G_MIXER_HANDLER_H
 
-
+#include "types.h"
 #include <memory>
 #include <string>
-#include "types.h"
 
-
-namespace giada {
-namespace m 
+namespace giada::m
 {
 class Wave;
 class Channel;
 class SampleChannel;
-
-namespace mh
+} // namespace giada::m
+namespace giada::m::mh
 {
 /* init
 Initializes mixer. */
@@ -67,12 +63,12 @@ int loadChannel(ID channelId, const std::string& fname);
 /* addAndLoadChannel (1)
 Creates a new channels, fills it with a Wave and then add it to the stack. */
 
-int addAndLoadChannel(ID columnId, const std::string& fname); 
+int addAndLoadChannel(ID columnId, const std::string& fname);
 
 /* addAndLoadChannel (2)
 Same as (1), but Wave is already provided. */
 
-void addAndLoadChannel(ID columnId, std::unique_ptr<Wave>&& w); 
+void addAndLoadChannel(ID columnId, std::unique_ptr<Wave>&& w);
 
 /* freeChannel
 Unloads existing Wave from a Sample Channel. */
@@ -99,7 +95,7 @@ void updateSoloCount();
 Fills armed Sample Channels with audio data coming from an input recording
 session. */
 
-void finalizeInputRec();
+void finalizeInputRec(Frame recordedFrames);
 
 /* hasLogicalSamples
 True if 1 or more samples are logical (memory only, such as takes) */
@@ -129,8 +125,7 @@ bool hasAudioData();
 
 float getInVol();
 float getOutVol();
-bool getInToOut();
-}}}  // giada::m::mh::
-
+bool  getInToOut();
+} // namespace giada::m::mh
 
 #endif

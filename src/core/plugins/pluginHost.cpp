@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,41 +24,36 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
 
-#include <cassert>
-#include "utils/log.h"
-#include "utils/vector.h"
-#include "core/model/model.h"
+#include "core/plugins/pluginHost.h"
 #include "core/channels/channel.h"
+#include "core/clock.h"
 #include "core/const.h"
+#include "core/model/model.h"
 #include "core/plugins/plugin.h"
 #include "core/plugins/pluginManager.h"
-#include "core/plugins/pluginHost.h"
+#include "utils/log.h"
+#include "utils/vector.h"
+#include <cassert>
 
-
-namespace giada {
-namespace m {
-namespace pluginHost
+namespace giada::m::pluginHost
 {
 namespace
 {
-juce::MessageManager* messageManager_;
+std::vector<Plugin*>     plugins_;
+juce::MessageManager*    messageManager_;
 juce::AudioBuffer<float> audioBuffer_;
-ID pluginId_;
-
+ID                       pluginId_;
 
 /* -------------------------------------------------------------------------- */
 
-
 void giadaToJuceTempBuf_(const AudioBuffer& outBuf)
 {
-	for (int i=0; i<outBuf.countFrames(); i++)
-		for (int j=0; j<outBuf.countChannels(); j++)
+	for (int i = 0; i < outBuf.countFrames(); i++)
+		for (int j = 0; j < outBuf.countChannels(); j++)
 			audioBuffer_.setSample(j, i, outBuf[i][j]);
 }
-
 
 /* juceToGiadaOutBuf_
 Converts buffer from Juce to Giada. A note for the future: if we overwrite (=) 
@@ -66,58 +61,57 @@ Converts buffer from Juce to Giada. A note for the future: if we overwrite (=)
 
 void juceToGiadaOutBuf_(AudioBuffer& outBuf)
 {
-	for (int i=0; i<outBuf.countFrames(); i++)
-		for (int j=0; j<outBuf.countChannels(); j++)	
+	for (int i = 0; i < outBuf.countFrames(); i++)
+		for (int j = 0; j < outBuf.countChannels(); j++)
 			outBuf[i][j] = audioBuffer_.getSample(j, i);
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-void processPlugins_(const std::vector<ID>& pluginIds, juce::MidiBuffer& events)
+void processPlugins_(const std::vector<Plugin*>& plugins, juce::MidiBuffer& events)
 {
-	model::PluginsLock l(model::plugins);
-
-	for (ID id : pluginIds) {
-		Plugin& p = model::get(model::plugins, id);
-		if (!p.valid || p.isSuspended() || p.isBypassed())
+	for (Plugin* p : plugins)
+	{
+		if (!p->valid || p->isSuspended() || p->isBypassed())
 			continue;
-		p.process(audioBuffer_, events);
-		events.clear();
+		p->process(audioBuffer_, events);
 	}
+	events.clear();
 }
+} // namespace
 
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 
-ID clonePlugin_(ID pluginId)
+bool Info::getCurrentPosition(CurrentPositionInfo& result)
 {
-	model::PluginsLock l(model::plugins);
+	result.bpm           = clock::getBpm();
+	result.timeInSamples = clock::getCurrentFrame();
+	result.timeInSeconds = clock::getCurrentSecond();
+	result.isPlaying     = clock::isRunning();
 
-	const Plugin&           original = model::get(model::plugins, pluginId);
-	std::unique_ptr<Plugin> clone    = pluginManager::makePlugin(original);
-	ID                      newId    = clone->id;
-
-	model::plugins.push(std::move(clone));
-
-	return newId;
+	return true;
 }
-} // {anonymous}
 
+/* -------------------------------------------------------------------------- */
+
+bool Info::canControlTransport()
+{
+	return false;
+}
 
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-
 
 void close()
 {
 	messageManager_->deleteInstance();
-	model::plugins.clear();
+	model::clear<model::PluginPtrs>();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void init(int buffersize)
 {
@@ -126,12 +120,10 @@ void init(int buffersize)
 	pluginId_ = 0;
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-void processStack(AudioBuffer& outBuf, const std::vector<ID>& pluginIds, 
-	juce::MidiBuffer* events)
+void processStack(AudioBuffer& outBuf, const std::vector<Plugin*>& plugins,
+    juce::MidiBuffer* events)
 {
 	assert(outBuf.countFrames() == audioBuffer_.getNumSamples());
 
@@ -139,129 +131,105 @@ void processStack(AudioBuffer& outBuf, const std::vector<ID>& pluginIds,
 	sample channels. No need for MIDI events. 
 	If events are not null: MIDI stack (MIDI channels). MIDI channels must not 
 	process the current buffer: give them an empty and clean one. */
-	
-	if (events == nullptr) {
+
+	if (events == nullptr)
+	{
 		giadaToJuceTempBuf_(outBuf);
 		juce::MidiBuffer dummyEvents; // empty
-		processPlugins_(pluginIds, dummyEvents);
+		processPlugins_(plugins, dummyEvents);
 	}
-	else {
+	else
+	{
 		audioBuffer_.clear();
-		processPlugins_(pluginIds, *events);
+		processPlugins_(plugins, *events);
 	}
 	juceToGiadaOutBuf_(outBuf);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void addPlugin(std::unique_ptr<Plugin> p, ID channelId)
 {
-	ID pluginId = p->id;
-	
-	model::plugins.push(std::move(p));
+	model::add(std::move(p));
 
-	model::onSwap(model::channels, channelId, [&](Channel& c)
-	{
-		c.pluginIds.push_back(pluginId);
-	});
+	const Plugin& pluginRef = model::back<Plugin>();
+
+	/* TODO - unfortunately JUCE wants mutable plugin objects due to the
+	presence of the non-const processBlock() method. Why not const_casting
+	only in the Plugin class? */
+	model::get().getChannel(channelId).plugins.push_back(const_cast<Plugin*>(&pluginRef));
+	model::swap(model::SwapType::HARD);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void swapPlugin(ID pluginId1, ID pluginId2, ID channelId)
+void swapPlugin(const m::Plugin& p1, const m::Plugin& p2, ID channelId)
 {
-	model::onSwap(model::channels, channelId, [&](Channel& c)
-	{
-		auto a = u::vector::indexOf(c.pluginIds, pluginId1); 
-		auto b = u::vector::indexOf(c.pluginIds, pluginId2); 
-	
-		std::swap(c.pluginIds.at(a), c.pluginIds.at(b));
-	});
-}
+	std::vector<m::Plugin*>& pvec   = model::get().getChannel(channelId).plugins;
+	std::size_t              index1 = u::vector::indexOf(pvec, &p1);
+	std::size_t              index2 = u::vector::indexOf(pvec, &p2);
+	std::swap(pvec.at(index1), pvec.at(index2));
 
+	model::swap(model::SwapType::HARD);
+}
 
 /* -------------------------------------------------------------------------- */
 
-
-void freePlugin(ID pluginId, ID channelId)
+void freePlugin(const m::Plugin& plugin, ID channelId)
 {
-	model::onSwap(model::channels, channelId, [&](Channel& c)
-	{
-		u::vector::remove(c.pluginIds, pluginId);
-	});
-
-	model::plugins.pop(model::getIndex(model::plugins, pluginId));
+	u::vector::remove(model::get().getChannel(channelId).plugins, &plugin);
+	model::swap(model::SwapType::HARD);
+	model::remove(plugin);
 }
 
-
-void freePlugins(const std::vector<ID>& pluginIds)
+void freePlugins(const std::vector<Plugin*>& plugins)
 {
-	for (ID id : pluginIds)
-		model::plugins.pop(model::getIndex(model::plugins, id));
+	// TODO - channels???
+	for (const Plugin* p : plugins)
+		model::remove(*p);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-std::vector<ID> clonePlugins(std::vector<ID> pluginIds)
+std::vector<Plugin*> clonePlugins(const std::vector<Plugin*>& plugins)
 {
-	std::vector<ID> out;
-	for (ID id : pluginIds)
-		out.push_back(clonePlugin_(id));
+	std::vector<Plugin*> out;
+	for (const Plugin* p : plugins)
+	{
+		model::add(pluginManager::makePlugin(*p));
+		out.push_back(&model::back<Plugin>());
+	}
 	return out;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void setPluginParameter(ID pluginId, int paramIndex, float value)
 {
-	model::onGet(model::plugins, pluginId, [&](Plugin& p)
-	{
-		p.setParameter(paramIndex, value);
-	});
+	model::find<Plugin>(pluginId)->setParameter(paramIndex, value);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void setPluginProgram(ID pluginId, int programIndex)
 {
-	model::onGet(model::plugins, pluginId, [&](Plugin& p)
-	{
-		p.setCurrentProgram(programIndex);
-	});
+	model::find<Plugin>(pluginId)->setCurrentProgram(programIndex);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void toggleBypass(ID pluginId)
 {
-	model::onGet(model::plugins, pluginId, [&](Plugin& p)
-	{
-		p.setBypass(!p.isBypassed());
-	});
+	Plugin& plugin = *model::find<Plugin>(pluginId);
+	plugin.setBypass(!plugin.isBypassed());
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void runDispatchLoop()
 {
 	messageManager_->runDispatchLoopUntil(10);
 }
-
-}}} // giada::m::pluginHost::
-
+} // namespace giada::m::pluginHost
 
 #endif // #ifdef WITH_VST

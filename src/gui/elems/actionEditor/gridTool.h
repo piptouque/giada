@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,30 +24,24 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_GRID_TOOL_H
 #define GE_GRID_TOOL_H
 
-
-#include <FL/Fl_Group.H>
 #include "core/types.h"
-
+#include <FL/Fl_Group.H>
 
 class geCheck;
 
-
-namespace giada {
-namespace v
+namespace giada::v
 {
 class geChoice;
 class geGridTool : public Fl_Group
 {
 public:
-
 	geGridTool(Pixel x, Pixel y);
 	~geGridTool();
 
-	int getValue() const;
+	int  getValue() const;
 	bool isOn() const;
 
 	Frame getSnapFrame(Frame f) const;
@@ -57,15 +51,13 @@ public:
 
 	Frame getCellSize() const;
 
-private:
-
-  	geChoice* gridType;
+  private:
+	geChoice* gridType;
 	geCheck*  active;
 
 	static void cb_changeType(Fl_Widget* /*w*/, void* p);
-	void cb_changeType();
+	void        cb_changeType();
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

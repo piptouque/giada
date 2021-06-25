@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,30 +24,25 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <atomic>
-#include <cassert>
-#include "glue/main.h"
-#include "glue/events.h"
-#include "core/model/model.h"
+#include "clock.h"
 #include "core/conf.h"
-#include "core/sequencer.h"
 #include "core/const.h"
 #include "core/kernelAudio.h"
-#include "core/mixerHandler.h"
 #include "core/kernelMidi.h"
+#include "core/mixerHandler.h"
+#include "core/model/model.h"
+#include "core/recorderHandler.h"
+#include "core/sequencer.h"
+#include "glue/events.h"
+#include "utils/log.h"
 #include "utils/math.h"
-#include "clock.h"
-
+#include <atomic>
+#include <cassert>
 
 namespace giada::m::clock
 {
 namespace
 {
-std::atomic<int> currentFrameWait_(0);
-std::atomic<int> currentFrame_(0);
-std::atomic<int> currentBeat_(0);
-
 /* quantizerStep_
 Tells how many frames to wait to perform a quantized action. */
 
@@ -56,7 +51,7 @@ int quantizerStep_ = 1;
 /* midiTC*
 MIDI timecode variables. */
 
-int midiTCrate_    = 0;      // Send MTC data every midiTCrate_ frames
+int midiTCrate_    = 0; // Send MTC data every midiTCrate_ frames
 int midiTCframes_  = 0;
 int midiTCseconds_ = 0;
 int midiTCminutes_ = 0;
@@ -66,7 +61,6 @@ int midiTChours_   = 0;
 kernelAudio::JackState jackStatePrev_;
 #endif
 
-
 /* -------------------------------------------------------------------------- */
 
 /* recomputeFrames_
@@ -75,232 +69,223 @@ Updates bpm, frames, beats and so on. Private version. */
 void recomputeFrames_(model::Clock& c)
 {
 	c.framesInLoop = static_cast<int>((conf::conf.samplerate * (60.0f / c.bpm)) * c.beats);
-	c.framesInBar  = static_cast<int>(c.framesInLoop / (float) c.bars);
-	c.framesInBeat = static_cast<int>(c.framesInLoop / (float) c.beats);
+	c.framesInBar  = static_cast<int>(c.framesInLoop / (float)c.bars);
+	c.framesInBeat = static_cast<int>(c.framesInLoop / (float)c.beats);
 	c.framesInSeq  = c.framesInBeat * G_MAX_BEATS;
 
 	if (c.quantize != 0)
 		quantizerStep_ = c.framesInBeat / c.quantize;
 }
-} // {anonymous}
 
+/* -------------------------------------------------------------------------- */
+
+void setBpm_(float current)
+{
+	float ratio = model::get().clock.bpm / current;
+
+	model::get().clock.bpm = current;
+	recomputeFrames_(model::get().clock);
+
+	m::recorderHandler::updateBpm(ratio, quantizerStep_);
+
+	model::swap(model::SwapType::HARD);
+
+	u::log::print("[clock::setBpm_] Bpm changed to %f\n", current);
+}
+} // namespace
 
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-
 
 void init(int sampleRate, float midiTCfps)
 {
-	midiTCrate_ = static_cast<int>((sampleRate / midiTCfps) * G_MAX_IO_CHANS);  // stereo values
+	midiTCrate_ = static_cast<int>((sampleRate / midiTCfps) * G_MAX_IO_CHANS); // stereo values
 
-	model::onSwap(model::clock, [&](model::Clock& c)
-	{
-		c.bars     = G_DEFAULT_BARS;
-		c.beats    = G_DEFAULT_BEATS;
-		c.bpm      = G_DEFAULT_BPM;
-		c.quantize = G_DEFAULT_QUANTIZE;
-		recomputeFrames_(c);
-	});
+	model::get().clock.bars     = G_DEFAULT_BARS;
+	model::get().clock.beats    = G_DEFAULT_BEATS;
+	model::get().clock.bpm      = G_DEFAULT_BPM;
+	model::get().clock.quantize = G_DEFAULT_QUANTIZE;
+	recomputeFrames_(model::get().clock);
+
+	model::swap(model::SwapType::NONE);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void recomputeFrames()
 {
-	model::onSwap(model::clock, [&](model::Clock& c) { recomputeFrames_(c);	});
+	recomputeFrames_(model::get().clock);
+	model::swap(model::SwapType::NONE);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool isRunning()
 {
-	model::ClockLock lock(model::clock);
-
-	return model::clock.get()->status == ClockStatus::RUNNING;
+	return model::get().clock.status == ClockStatus::RUNNING;
 }
-
 
 bool isActive()
 {
-	model::ClockLock lock(model::clock);
-	
-	ClockStatus status = model::clock.get()->status;
-	return status == ClockStatus::RUNNING || status == ClockStatus::WAITING;
+	const model::Clock& c = model::get().clock;
+	return c.status == ClockStatus::RUNNING || c.status == ClockStatus::WAITING;
 }
-
 
 bool quantoHasPassed()
 {
-	return clock::getQuantizerValue() != 0 && currentFrame_.load() % quantizerStep_ == 0;
+	const model::Clock& c = model::get().clock;
+	return clock::getQuantizerValue() != 0 && c.state->currentFrame.load() % quantizerStep_ == 0;
 }
-
 
 bool isOnBar()
 {
-	model::ClockLock lock(model::clock);
+	const model::Clock& c = model::get().clock;
 
-	const model::Clock* c = model::clock.get();
-	
-	int currentFrame = currentFrame_.load();
+	int currentFrame = c.state->currentFrame.load();
 
-	if (c->status == ClockStatus::WAITING || currentFrame == 0)
+	if (c.status == ClockStatus::WAITING || currentFrame == 0)
 		return false;
-	return currentFrame % c->framesInBar == 0;
+	return currentFrame % c.framesInBar == 0;
 }
-
 
 bool isOnBeat()
 {
-	model::ClockLock lock(model::clock);
-	
-	const model::Clock* c = model::clock.get();
-	
-	if (c->status == ClockStatus::WAITING)
-		return currentFrameWait_.load() % c->framesInBeat == 0;
-	return currentFrame_.load() % c->framesInBeat == 0;
-}
+	const model::Clock& c = model::get().clock;
 
+	if (c.status == ClockStatus::WAITING)
+		return c.state->currentFrameWait.load() % c.framesInBeat == 0;
+	return c.state->currentFrame.load() % c.framesInBeat == 0;
+}
 
 bool isOnFirstBeat()
 {
-	return currentFrame_.load() == 0;
+	return model::get().clock.state->currentFrame.load() == 0;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
 void setBpm(float b)
-{	
+{
 	b = std::clamp(b, G_MIN_BPM, G_MAX_BPM);
 
-	model::onSwap(model::clock, [&](model::Clock& c)
-	{
-		c.bpm = b;
-		recomputeFrames_(c);
-	});
-}
+	/* If JACK is being used, let it handle the bpm change. */
 
+#ifdef WITH_AUDIO_JACK
+	if (kernelAudio::getAPI() == G_SYS_API_JACK)
+	{
+		kernelAudio::jackSetBpm(b);
+		return;
+	}
+#endif
+
+	setBpm_(b);
+}
 
 void setBeats(int newBeats, int newBars)
 {
 	newBeats = std::clamp(newBeats, 1, G_MAX_BEATS);
 	newBars  = std::clamp(newBars, 1, newBeats); // Bars cannot be greater than beats
 
-	model::onSwap(model::clock, [&](model::Clock& c)
-	{
-		c.beats = newBeats;
-		c.bars  = newBars;
-		recomputeFrames_(c);
-	});
-}
+	model::get().clock.beats = newBeats;
+	model::get().clock.bars  = newBars;
+	recomputeFrames_(model::get().clock);
 
+	model::swap(model::SwapType::HARD);
+}
 
 void setQuantize(int q)
 {
-	model::onSwap(model::clock, [&](model::Clock& c)
-	{
-		c.quantize = q;	
-		recomputeFrames_(c);
-	});
-}
+	model::get().clock.quantize = q;
+	recomputeFrames_(model::get().clock);
 
+	model::swap(model::SwapType::HARD);
+}
 
 void setStatus(ClockStatus s)
 {
-	model::onSwap(model::clock, [&](model::Clock& c)
+	model::get().clock.status = s;
+	model::swap(model::SwapType::SOFT);
+
+	if (s == ClockStatus::RUNNING)
 	{
-		c.status = s;
-	});
-	
-	if (s == ClockStatus::RUNNING) {
-		if (conf::conf.midiSync == MIDI_SYNC_CLOCK_M) {
+		if (conf::conf.midiSync == MIDI_SYNC_CLOCK_M)
+		{
 			kernelMidi::send(MIDI_START, -1, -1);
 			kernelMidi::send(MIDI_POSITION_PTR, 0, 0);
 		}
 	}
-	else
-	if (s == ClockStatus::STOPPED) {
+	else if (s == ClockStatus::STOPPED)
+	{
 		if (conf::conf.midiSync == MIDI_SYNC_CLOCK_M)
 			kernelMidi::send(MIDI_STOP, -1, -1);
 	}
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-void incrCurrentFrame() 
+void advance(Frame amount)
 {
-	model::ClockLock lock(model::clock);
-	
-	const model::Clock* c = model::clock.get();
+	const model::Clock& c = model::get().clock;
 
-	if (c->status == ClockStatus::WAITING) {
-		int f = currentFrameWait_.load() + 1;
-		f %= c->framesInLoop;
-		currentFrameWait_.store(f);
+	if (c.status == ClockStatus::WAITING)
+	{
+		int f = (c.state->currentFrameWait.load() + amount) % c.framesInLoop;
+		c.state->currentFrameWait.store(f);
 		return;
 	}
 
-	int f = currentFrame_.load() + 1;
-	int b = currentBeat_.load();
+	int f = (c.state->currentFrame.load() + amount) % c.framesInLoop;
+	int b = f / c.framesInBeat;
 
-	f %= c->framesInLoop;
-	b = f / c->framesInBeat;
-	
-	currentFrame_.store(f);
-	currentBeat_.store(b);
+	c.state->currentFrame.store(f);
+	c.state->currentBeat.store(b);
 }
-
-
-void rewind()
-{
-	currentFrame_.store(0);
-	currentBeat_.store(0);
-	currentFrameWait_.store(0);
-	
-	sendMIDIrewind();
-}
-
 
 /* -------------------------------------------------------------------------- */
 
+void rewind()
+{
+	const model::Clock& c = model::get().clock;
+
+	c.state->currentFrame.store(0);
+	c.state->currentBeat.store(0);
+	c.state->currentFrameWait.store(0);
+
+	sendMIDIrewind();
+}
+
+/* -------------------------------------------------------------------------- */
 
 void sendMIDIsync()
 {
-	model::ClockLock lock(model::clock);
-	
-	const model::Clock* c = model::clock.get();
-	
+	const model::Clock& c = model::get().clock;
+
 	/* Sending MIDI sync while waiting is meaningless. */
 
-	if (c->status == ClockStatus::WAITING)
+	if (c.status == ClockStatus::WAITING)
 		return;
 
-	int currentFrame = currentFrame_.load();
+	int currentFrame = c.state->currentFrame.load();
 
 	/* TODO - only Master (_M) is implemented so far. */
 
-	if (conf::conf.midiSync == MIDI_SYNC_CLOCK_M) {
-		if (currentFrame % (c->framesInBeat / 24) == 0)
+	if (conf::conf.midiSync == MIDI_SYNC_CLOCK_M)
+	{
+		if (currentFrame % (c.framesInBeat / 24) == 0)
 			kernelMidi::send(MIDI_CLOCK, -1, -1);
 		return;
 	}
 
-	if (conf::conf.midiSync == MIDI_SYNC_MTC_M) {
+	if (conf::conf.midiSync == MIDI_SYNC_MTC_M)
+	{
 
 		/* check if a new timecode frame has passed. If so, send MIDI TC
 		 * quarter frames. 8 quarter frames, divided in two branches:
 		 * 1-4 and 5-8. We check timecode frame's parity: if even, send
 		 * range 1-4, if odd send 5-8. */
 
-		if (currentFrame % midiTCrate_ != 0)  // no timecode frame passed
+		if (currentFrame % midiTCrate_ != 0) // no timecode frame passed
 			return;
 
 		/* frame low nibble
@@ -308,11 +293,12 @@ void sendMIDIsync()
 		 * seconds low nibble
 		 * seconds high nibble */
 
-		if (midiTCframes_ % 2 == 0) {
-			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCframes_ & 0x0F)  | 0x00, -1);
-			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCframes_ >> 4)    | 0x10, -1);
+		if (midiTCframes_ % 2 == 0)
+		{
+			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCframes_ & 0x0F) | 0x00, -1);
+			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCframes_ >> 4) | 0x10, -1);
 			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCseconds_ & 0x0F) | 0x20, -1);
-			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCseconds_ >> 4)   | 0x30, -1);
+			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCseconds_ >> 4) | 0x30, -1);
 		}
 
 		/* minutes low nibble
@@ -320,11 +306,12 @@ void sendMIDIsync()
 		 * hours low nibble
 		 * hours high nibble SMPTE frame rate */
 
-		else {
+		else
+		{
 			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCminutes_ & 0x0F) | 0x40, -1);
-			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCminutes_ >> 4)   | 0x50, -1);
-			kernelMidi::send(MIDI_MTC_QUARTER, (midiTChours_ & 0x0F)   | 0x60, -1);
-			kernelMidi::send(MIDI_MTC_QUARTER, (midiTChours_ >> 4)     | 0x70, -1);
+			kernelMidi::send(MIDI_MTC_QUARTER, (midiTCminutes_ >> 4) | 0x50, -1);
+			kernelMidi::send(MIDI_MTC_QUARTER, (midiTChours_ & 0x0F) | 0x60, -1);
+			kernelMidi::send(MIDI_MTC_QUARTER, (midiTChours_ >> 4) | 0x70, -1);
 		}
 
 		midiTCframes_++;
@@ -332,13 +319,16 @@ void sendMIDIsync()
 		/* check if total timecode frames are greater than timecode fps:
 		 * if so, a second has passed */
 
-		if (midiTCframes_ > conf::conf.midiTCfps) {
+		if (midiTCframes_ > conf::conf.midiTCfps)
+		{
 			midiTCframes_ = 0;
 			midiTCseconds_++;
-			if (midiTCseconds_ >= 60) {
+			if (midiTCseconds_ >= 60)
+			{
 				midiTCminutes_++;
 				midiTCseconds_ = 0;
-				if (midiTCminutes_ >= 60) {
+				if (midiTCminutes_ >= 60)
+				{
 					midiTChours_++;
 					midiTCminutes_ = 0;
 				}
@@ -348,9 +338,7 @@ void sendMIDIsync()
 	}
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void sendMIDIrewind()
 {
@@ -364,20 +352,18 @@ void sendMIDIrewind()
 	 * be sent. The Full Frame is a SysEx message that encodes the entire
 	 * SMPTE time in one message */
 
-	if (conf::conf.midiSync == MIDI_SYNC_MTC_M) {
-		kernelMidi::send(MIDI_SYSEX, 0x7F, 0x00);  // send msg on channel 0
-		kernelMidi::send(0x01, 0x01, 0x00);        // hours 0
-		kernelMidi::send(0x00, 0x00, 0x00);        // mins, secs, frames 0
-		kernelMidi::send(MIDI_EOX, -1, -1);        // end of sysex
+	if (conf::conf.midiSync == MIDI_SYNC_MTC_M)
+	{
+		kernelMidi::send(MIDI_SYSEX, 0x7F, 0x00); // send msg on channel 0
+		kernelMidi::send(0x01, 0x01, 0x00);       // hours 0
+		kernelMidi::send(0x00, 0x00, 0x00);       // mins, secs, frames 0
+		kernelMidi::send(MIDI_EOX, -1, -1);       // end of sysex
 	}
-	else
-	if (conf::conf.midiSync == MIDI_SYNC_CLOCK_M)
+	else if (conf::conf.midiSync == MIDI_SYNC_CLOCK_M)
 		kernelMidi::send(MIDI_POSITION_PTR, 0, 0);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 #ifdef WITH_AUDIO_JACK
 
@@ -388,20 +374,24 @@ void recvJackSync()
 
 	kernelAudio::JackState jackStateCurr = kernelAudio::jackTransportQuery();
 
-	if (jackStateCurr != jackStatePrev_) {	
-
-		if (jackStateCurr.frame != jackStatePrev_.frame && jackStateCurr.frame == 0) {
-G_DEBUG("JackState received - rewind to frame 0");
+	if (jackStateCurr != jackStatePrev_)
+	{
+		if (jackStateCurr.frame != jackStatePrev_.frame && jackStateCurr.frame == 0)
+		{
+			G_DEBUG("JackState received - rewind to frame 0");
 			sequencer::rewind();
 		}
 
-		if (jackStateCurr.bpm != jackStatePrev_.bpm && jackStateCurr.bpm > 1.0f) {  // 0 bpm if Jack does not send that info
-G_DEBUG("JackState received - bpm=" << jackStateCurr.bpm);
-			c::main::setBpm(jackStateCurr.bpm);
+		// jackStateCurr.bpm == 0 if JACK doesn't send that info
+		if (jackStateCurr.bpm != jackStatePrev_.bpm && jackStateCurr.bpm > 1.0f)
+		{
+			G_DEBUG("JackState received - bpm=" << jackStateCurr.bpm);
+			setBpm_(jackStateCurr.bpm);
 		}
 
-		if (jackStateCurr.running != jackStatePrev_.running) {
-G_DEBUG("JackState received - running=" << jackStateCurr.running);			
+		if (jackStateCurr.running != jackStatePrev_.running)
+		{
+			G_DEBUG("JackState received - running=" << jackStateCurr.running);
 			jackStateCurr.running ? sequencer::start() : sequencer::stop();
 		}
 	}
@@ -411,42 +401,57 @@ G_DEBUG("JackState received - running=" << jackStateCurr.running);
 
 #endif
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool canQuantize()
 {
-	model::ClockLock lock(model::clock);
-	
-	const model::Clock* c = model::clock.get();
-	return c->quantize > 0 && c->status == ClockStatus::RUNNING;
+	const model::Clock& c = model::get().clock;
+
+	return c.quantize > 0 && c.status == ClockStatus::RUNNING;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 Frame quantize(Frame f)
 {
-	if (!canQuantize()) return f;
+	if (!canQuantize())
+		return f;
 	return u::math::quantize(f, quantizerStep_) % getFramesInLoop(); // No overflow
 }
 
+/* -------------------------------------------------------------------------- */
+
+int         getCurrentFrame() { return model::get().clock.state->currentFrame.load(); }
+int         getCurrentBeat() { return model::get().clock.state->currentBeat.load(); }
+int         getQuantizerStep() { return quantizerStep_; }
+ClockStatus getStatus() { return model::get().clock.status; }
+int         getFramesInLoop() { return model::get().clock.framesInLoop; }
+int         getFramesInBar() { return model::get().clock.framesInBar; }
+int         getFramesInBeat() { return model::get().clock.framesInBeat; }
+int         getFramesInSeq() { return model::get().clock.framesInSeq; }
+int         getQuantizerValue() { return model::get().clock.quantize; }
+float       getBpm() { return model::get().clock.bpm; }
+int         getBeats() { return model::get().clock.beats; }
+int         getBars() { return model::get().clock.bars; }
 
 /* -------------------------------------------------------------------------- */
 
+float getCurrentSecond()
+{
+	return getCurrentFrame() / static_cast<float>(conf::conf.samplerate);
+}
 
-int         getCurrentFrame()   { return currentFrame_.load(); }
-int         getCurrentBeat()    { return currentBeat_.load(); }
-int         getQuantizerStep()  { return quantizerStep_; }
-ClockStatus getStatus()         { model::ClockLock lock(model::clock); return model::clock.get()->status; }
-int         getFramesInLoop()   { model::ClockLock lock(model::clock); return model::clock.get()->framesInLoop; }
-int         getFramesInBar()    { model::ClockLock lock(model::clock); return model::clock.get()->framesInBar; }
-int         getFramesInBeat()   { model::ClockLock lock(model::clock); return model::clock.get()->framesInBeat; }
-int         getFramesInSeq()    { model::ClockLock lock(model::clock); return model::clock.get()->framesInSeq; }
-int         getQuantizerValue() { model::ClockLock lock(model::clock); return model::clock.get()->quantize; }
-float       getBpm()            { model::ClockLock lock(model::clock); return model::clock.get()->bpm; }
-int         getBeats()          { model::ClockLock lock(model::clock); return model::clock.get()->beats; }
-int         getBars()           { model::ClockLock lock(model::clock); return model::clock.get()->bars; }
-} // giada::m::clock::
+/* -------------------------------------------------------------------------- */
+
+Frame getMaxFramesInLoop()
+{
+	return (conf::conf.samplerate * (60.0f / G_MIN_BPM)) * getBeats();
+}
+
+/* -------------------------------------------------------------------------- */
+
+float calcBpmFromRec(Frame recordedFrames)
+{
+	return (60.0f * getBeats()) / (recordedFrames / static_cast<float>(conf::conf.samplerate));
+}
+} // namespace giada::m::clock

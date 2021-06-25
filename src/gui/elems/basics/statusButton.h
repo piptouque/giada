@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -27,31 +27,28 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_STATUS_BUTTON_H
 #define GE_STATUS_BUTTON_H
 
-
 #include "button.h"
 
-
+namespace giada::v
+{
 class geStatusButton : public geButton
 {
-public:
-
-	geStatusButton(int x, int y, int w, int h, const char** imgOff=nullptr,
-    const char** imgOn=nullptr, const char** imgDisabled=nullptr);
+  public:
+	geStatusButton(int x, int y, int w, int h, const char** imgOff = nullptr,
+	    const char** imgOn = nullptr, const char** imgDisabled = nullptr);
 
 	void draw() override;
 
-    bool getStatus() const;
+	bool getStatus() const;
 
-    void setStatus(bool s);
+	void setStatus(bool s);
 
-private:
-
+  private:
 	bool m_status;
 };
-
+} // namespace giada::v
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,22 +24,17 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_BOX_H
 #define GE_BOX_H
 
-
 #include <FL/Fl_Box.H>
-
 
 class geBox : public Fl_Box
 {
 public:
-
-	geBox(int x, int y, int w, int h, const char* l=nullptr, Fl_Align al=FL_ALIGN_CENTER);
+	geBox(int x, int y, int w, int h, const char* l = nullptr, Fl_Align al = FL_ALIGN_CENTER);
 
 	void draw() override;
 };
-
 
 #endif

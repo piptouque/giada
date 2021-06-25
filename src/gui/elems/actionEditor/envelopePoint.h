@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,29 +24,26 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_ENVELOPE_POINT_H
 #define GE_ENVELOPE_POINT_H
 
-
-#include "core/recorder.h"
 #include "baseAction.h"
+#include "core/recorder.h"
 
-
-namespace giada {
+namespace giada
+{
 namespace v
 {
 class geEnvelopePoint : public geBaseAction
 {
 public:
-
 	static const Pixel SIDE = 12;
 
 	geEnvelopePoint(Pixel x, Pixel y, m::Action a);
 
 	void draw() override;
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif

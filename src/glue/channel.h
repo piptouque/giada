@@ -1,10 +1,10 @@
-	/* -----------------------------------------------------------------------------
+/* -----------------------------------------------------------------------------
  *
  * Giada - Your Hardcore Loopmachine
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,95 +24,85 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_GLUE_CHANNEL_H
 #define G_GLUE_CHANNEL_H
 
-
-#include <optional>
-#include <atomic>
-#include <string>
-#include <vector>
 #include "core/model/model.h"
 #include "core/types.h"
+#include <atomic>
+#include <optional>
+#include <string>
+#include <vector>
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
-class Channel;
-class SamplePlayer;
+class Plugin;
 }
-namespace c {
-namespace channel 
+namespace giada::c::channel
 {
 struct SampleData
 {
 	SampleData() = delete;
-	SampleData(const m::SamplePlayer&, const m::AudioReceiver&);
+	SampleData(const m::channel::Data&);
 
-	Frame a_getTracker() const;
-	Frame a_getBegin() const;
-	Frame a_getEnd() const;
-	bool  a_getInputMonitor() const;
-	bool  a_getOverdubProtection() const;
+	Frame getTracker() const;
+	Frame getBegin() const;
+	Frame getEnd() const;
+	bool  getInputMonitor() const;
+	bool  getOverdubProtection() const;
 
 	ID               waveId;
 	SamplePlayerMode mode;
 	bool             isLoop;
 	float            pitch;
 
-private:
-
-	const m::SamplePlayer*  m_samplePlayer;
-	const m::AudioReceiver* m_audioReceiver;
+  private:
+	const m::channel::Data* m_channel;
 };
 
 struct MidiData
 {
 	MidiData() = delete;
-	MidiData(const m::MidiSender&);
+	MidiData(const m::channel::Data&);
 
-	bool a_isOutputEnabled() const;
-	int  a_getFilter() const;
+	bool isOutputEnabled() const;
+	int  getFilter() const;
 
-private:
-
-	const m::MidiSender* m_midiSender;
+  private:
+	const m::channel::Data* m_channel;
 };
 
 struct Data
 {
-	Data(const m::Channel&);
+	Data(const m::channel::Data&);
 
-	bool a_getMute() const;
-	bool a_getSolo() const;
-	ChannelStatus a_getPlayStatus() const;
-	ChannelStatus a_getRecStatus() const;
-	bool a_getReadActions() const;
-	bool a_isArmed() const;
-	bool a_isRecordingInput() const;
-	bool a_isRecordingAction() const;
+	bool          getMute() const;
+	bool          getSolo() const;
+	ChannelStatus getPlayStatus() const;
+	ChannelStatus getRecStatus() const;
+	bool          getReadActions() const;
+	bool          isArmed() const;
+	bool          isRecordingInput() const;
+	bool          isRecordingAction() const;
 
-	ID              id;
-	ID              columnId;
+	ID id;
+	ID columnId;
 #ifdef WITH_VST
-	std::vector<ID> pluginIds;
+	std::vector<m::Plugin*> plugins;
 #endif
-	ChannelType     type;
-	Pixel           height;
-	std::string     name;
-	float           volume;
-	float           pan;
-	int             key;
-	bool            hasActions;
+	ChannelType type;
+	Pixel       height;
+	std::string name;
+	float       volume;
+	float       pan;
+	int         key;
+	bool        hasActions;
 
 	std::optional<SampleData> sample;
 	std::optional<MidiData>   midi;
 
-private:
-
-	const m::Channel& m_channel;
+  private:
+	const m::channel::Data& m_channel;
 };
 
 /* getChannels
@@ -124,16 +114,6 @@ Data getData(ID channelId);
 Returns a vector of viewModel objects filled with data from channels. */
 
 std::vector<Data> getChannels();
-
-/* a_get
-Returns an atomic property from a Channel, by locking it first. */
-
-template <typename T>
-T a_get(const std::atomic<T>& a)
-{
-	m::model::ChannelsLock l(m::model::channels);
-	return a.load();
-}
 
 /* addChannel
 Adds an empty new channel to the stack. */
@@ -148,7 +128,7 @@ int loadChannel(ID columnId, const std::string& fname);
 /* addAndLoadChannel
 Adds a new Sample Channel and fills it with a wave right away. */
 
-void addAndLoadChannel(ID columnId, const std::string& fpath); 
+void addAndLoadChannel(ID columnId, const std::string& fpath);
 
 /* addAndLoadChannels
 As above, with multiple audio file paths in input. */
@@ -179,6 +159,6 @@ void setName(ID channelId, const std::string& name);
 void setHeight(ID channelId, Pixel p);
 
 void setSamplePlayerMode(ID channelId, SamplePlayerMode m);
-}}} // giada::c::channel::
+} // namespace giada::c::channel
 
 #endif

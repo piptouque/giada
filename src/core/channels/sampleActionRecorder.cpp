@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,131 +24,67 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <cassert>
+#include "sampleActionRecorder.h"
 #include "core/action.h"
+#include "core/channels/channel.h"
 #include "core/clock.h"
 #include "core/conf.h"
+#include "core/eventDispatcher.h"
 #include "core/mixer.h"
-#include "core/recorderHandler.h"
 #include "core/recManager.h"
-#include "core/channels/state.h"
-#include "sampleActionRecorder.h"
+#include "core/recorderHandler.h"
+#include <cassert>
 
-
-namespace giada {
-namespace m
+namespace giada::m::sampleActionRecorder
 {
-SampleActionRecorder::SampleActionRecorder(ChannelState* c, SamplePlayerState* sc)
-: m_channelState(c)
-, m_samplePlayerState(sc)
+namespace
 {
-}
-
+void record_(channel::Data& ch, int note);
+void onKeyPress_(channel::Data& ch);
+void toggleReadActions_(channel::Data& ch);
+void startReadActions_(channel::Data& ch);
+void stopReadActions_(channel::Data& ch, ChannelStatus curRecStatus);
+void killReadActions_(channel::Data& ch);
+bool canRecord_(const channel::Data& ch);
 
 /* -------------------------------------------------------------------------- */
 
-
-SampleActionRecorder::SampleActionRecorder(const SampleActionRecorder& /*o*/, 
-	ChannelState* c, SamplePlayerState* sc)
-: SampleActionRecorder(c, sc)
+bool canRecord_(const channel::Data& ch)
 {
+	return recManager::isRecordingAction() &&
+	       clock::isRunning() &&
+	       !recManager::isRecordingInput() &&
+	       !ch.samplePlayer->isAnyLoopMode();
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void SampleActionRecorder::parse(const mixer::Event& e) const
+void onKeyPress_(channel::Data& ch)
 {
-	assert(m_channelState != nullptr);
+	if (!canRecord_(ch))
+		return;
+	record_(ch, MidiEvent::NOTE_ON);
 
-	switch (e.type) {
+	/* Skip reading actions when recording on ChannelMode::SINGLE_PRESS to 
+	prevent	existing actions to interfere with the keypress/keyrel combo. */
 
-		case mixer::EventType::KEY_PRESS:
-			onKeyPress(); break;
-
-		/* Record a stop event only if channel is SINGLE_PRESS. For any other 
-		mode the key release event is meaningless. */
-
-		case mixer::EventType::KEY_RELEASE:
-			if (canRecord() && m_samplePlayerState->mode.load() == SamplePlayerMode::SINGLE_PRESS) 
-				record(MidiEvent::NOTE_OFF);
-			break;
-
-		case mixer::EventType::KEY_KILL:
-			if (canRecord()) 
-				record(MidiEvent::NOTE_KILL);
-			break;
-		
-		case mixer::EventType::SEQUENCER_FIRST_BEAT:
-			onFirstBeat(); break;
-
-		case mixer::EventType::CHANNEL_TOGGLE_READ_ACTIONS:	
-			toggleReadActions(); break;        
-
-		case mixer::EventType::CHANNEL_KILL_READ_ACTIONS:
-			killReadActions(); break;      
-		
-		default: break;
-	}
+	if (ch.samplePlayer->mode == SamplePlayerMode::SINGLE_PRESS)
+		ch.readActions = false;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void SampleActionRecorder::record(int note) const
+void record_(channel::Data& ch, int note)
 {
-	recorderHandler::liveRec(m_channelState->id, MidiEvent(note, 0, 0), 
-		clock::quantize(clock::getCurrentFrame()));
+	recorderHandler::liveRec(ch.id, MidiEvent(note, 0, 0),
+	    clock::quantize(clock::getCurrentFrame()));
 
-	m_channelState->hasActions = true;
+	ch.hasActions = true;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void SampleActionRecorder::startReadActions() const
-{
-	if (conf::conf.treatRecsAsLoops) 
-		m_channelState->recStatus.store(ChannelStatus::WAIT);
-	else {
-		m_channelState->recStatus.store(ChannelStatus::PLAY);
-		m_channelState->readActions.store(true);
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void SampleActionRecorder::stopReadActions(ChannelStatus curRecStatus) const
-{
-	/* First of all, if the clock is not running or treatRecsAsLoops is off, 
-	just stop and disable everything. Otherwise make sure a channel with actions
-	behave like a dynamic one. */
-
-	if (!clock::isRunning() || !conf::conf.treatRecsAsLoops) {
-		m_channelState->recStatus.store(ChannelStatus::OFF);
-	    m_channelState->readActions.store(false);
-	}
-	else
-	if (curRecStatus == ChannelStatus::WAIT)
-		m_channelState->recStatus.store(ChannelStatus::OFF);
-	else
-	if (curRecStatus == ChannelStatus::ENDING)
-		m_channelState->recStatus.store(ChannelStatus::PLAY);
-	else
-		m_channelState->recStatus.store(ChannelStatus::ENDING);
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void SampleActionRecorder::toggleReadActions() const
+void toggleReadActions_(channel::Data& ch)
 {
 	/* When you start reading actions while conf::treatRecsAsLoops is true, the
 	value ch.state->readActions actually is not set to true immediately, because
@@ -158,96 +94,105 @@ void SampleActionRecorder::toggleReadActions() const
 	handle the case of when you press 'R', the channel goes into REC_WAITING and
 	then you press 'R' again to undo the status. */
 
-	if (!m_channelState->hasActions)
+	if (!ch.hasActions)
 		return;
 
-	bool          readActions = m_channelState->readActions.load();
-	ChannelStatus recStatus   = m_channelState->recStatus.load();
+	bool          readActions = ch.readActions;
+	ChannelStatus recStatus   = ch.state->recStatus.load();
 
 	if (readActions || (!readActions && recStatus == ChannelStatus::WAIT))
-		stopReadActions(recStatus);
+		stopReadActions_(ch, recStatus);
 	else
-		startReadActions();
+		startReadActions_(ch);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
+void startReadActions_(channel::Data& ch)
+{
+	if (conf::conf.treatRecsAsLoops)
+		ch.state->recStatus.store(ChannelStatus::WAIT);
+	else
+	{
+		ch.state->recStatus.store(ChannelStatus::PLAY);
+		ch.readActions = true;
+	}
+}
 
-void SampleActionRecorder::killReadActions() const
+/* -------------------------------------------------------------------------- */
+
+void stopReadActions_(channel::Data& ch, ChannelStatus curRecStatus)
+{
+	/* First of all, if the clock is not running or treatRecsAsLoops is off, 
+	just stop and disable everything. Otherwise make sure a channel with actions
+	behave like a dynamic one. */
+
+	if (!clock::isRunning() || !conf::conf.treatRecsAsLoops)
+	{
+		ch.state->recStatus.store(ChannelStatus::OFF);
+		ch.readActions = false;
+	}
+	else if (curRecStatus == ChannelStatus::WAIT)
+		ch.state->recStatus.store(ChannelStatus::OFF);
+	else if (curRecStatus == ChannelStatus::ENDING)
+		ch.state->recStatus.store(ChannelStatus::PLAY);
+	else
+		ch.state->recStatus.store(ChannelStatus::ENDING);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void killReadActions_(channel::Data& ch)
 {
 	/* Killing Read Actions, i.e. shift + click on 'R' button is meaninful only 
 	when the conf::treatRecsAsLoops is true. */
 
 	if (!conf::conf.treatRecsAsLoops)
 		return;
-	m_channelState->recStatus.store(ChannelStatus::OFF);
-	m_channelState->readActions.store(false);
+	ch.state->recStatus.store(ChannelStatus::OFF);
+	ch.readActions = false;
 }
-
+} // namespace
 
 /* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 
-
-void SampleActionRecorder::onKeyPress() const
+void react(channel::Data& ch, const eventDispatcher::Event& e)
 {
-	if (!canRecord()) 
+	if (!ch.hasWave())
 		return;
-	record(MidiEvent::NOTE_ON);
 
-	/* Skip reading actions when recording on ChannelMode::SINGLE_PRESS to 
-	prevent	existing actions to interfere with the keypress/keyrel combo. */
+	switch (e.type)
+	{
 
-	if (m_samplePlayerState->mode.load() == SamplePlayerMode::SINGLE_PRESS)
-		m_channelState->readActions = false;
-}
+	case eventDispatcher::EventType::KEY_PRESS:
+		onKeyPress_(ch);
+		break;
 
+		/* Record a stop event only if channel is SINGLE_PRESS. For any other 
+		mode the key release event is meaningless. */
 
-/* -------------------------------------------------------------------------- */
+	case eventDispatcher::EventType::KEY_RELEASE:
+		if (canRecord_(ch) && ch.samplePlayer->mode == SamplePlayerMode::SINGLE_PRESS)
+			record_(ch, MidiEvent::NOTE_OFF);
+		break;
 
+	case eventDispatcher::EventType::KEY_KILL:
+		if (canRecord_(ch))
+			record_(ch, MidiEvent::NOTE_KILL);
+		break;
 
-void SampleActionRecorder::onKeyRelease() const
-{
-	if (canRecord() && m_samplePlayerState->mode.load() == SamplePlayerMode::SINGLE_PRESS) {
-		record(MidiEvent::NOTE_OFF);
-		m_channelState->readActions = true;
+	case eventDispatcher::EventType::CHANNEL_TOGGLE_READ_ACTIONS:
+		toggleReadActions_(ch);
+		break;
+
+	case eventDispatcher::EventType::CHANNEL_KILL_READ_ACTIONS:
+		killReadActions_(ch);
+		break;
+
+	default:
+		break;
 	}
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void SampleActionRecorder::onFirstBeat() const
-{
-	ChannelStatus recStatus = m_channelState->recStatus.load();
-
-	switch (recStatus) { 
-
-		case ChannelStatus::ENDING:
-            m_channelState->recStatus.store(ChannelStatus::OFF);
-			m_channelState->readActions = false;
-			break;
-
-		case ChannelStatus::WAIT:
-            m_channelState->recStatus.store(ChannelStatus::PLAY);
-			m_channelState->readActions = true;
-			break;
-
-		default: break;
-	}	
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-bool SampleActionRecorder::canRecord() const
-{
-	return recManager::isRecordingAction() && 
-	       clock::isRunning()              && 
-	       !recManager::isRecordingInput() &&
-		   !m_samplePlayerState->isAnyLoopMode();
-}
-}} // giada::m::
-
+} // namespace giada::m::sampleActionRecorder

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,25 +24,19 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_RECORDER_H
 #define G_RECORDER_H
 
-
-#include <map>
-#include <vector>
-#include <functional>
-#include <memory>
-#include "core/types.h"
 #include "core/action.h"
-#include "core/patch.h"
 #include "core/midiEvent.h"
+#include "core/patch.h"
+#include "core/types.h"
+#include <functional>
+#include <map>
+#include <memory>
+#include <vector>
 
-
-namespace giada {
-namespace m 
-{
-namespace recorder
+namespace giada::m::recorder
 {
 using ActionMap = std::map<Frame, std::vector<Action>>;
 
@@ -96,7 +90,7 @@ void updateSiblings(ID id, ID prevId, ID nextId);
 /* hasActions
 Checks if the channel has at least one action recorded. */
 
-bool hasActions(ID channelId, int type=0);
+bool hasActions(ID channelId, int type = 0);
 
 /* makeAction
 Makes a new action given some data. */
@@ -143,20 +137,10 @@ Given a frame 'f' returns the closest action. */
 
 Action getClosestAction(ID channelId, Frame f, int type);
 
-/* updateMapPointers
-Updates all prev/next actions pointers into the action map. This is required
-after an action has been recorded, since pushing back new actions in a Action 
-vector makes it reallocating the existing ones. Also needed in model::Data copy
-constructor. */
-
-void updateMapPointers(ActionMap& src); 
-
 /* getNewActionId
 Returns a new action ID, internally generated. */
 
 ID getNewActionId();
-
-}}} // giada::m::recorder::
-
+} // namespace giada::m::recorder
 
 #endif

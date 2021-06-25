@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,57 +24,62 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CONST_H
 #define G_CONST_H
 
-
 #include <cstdint>
-
+#include <iostream>
 
 /* -- debug ----------------------------------------------------------------- */
 #ifndef NDEBUG
-    #define G_DEBUG_MODE
-    #define G_DEBUG(x) std::cerr << __FILE__ << "::" << __func__  << "() - " << x << "\n";
+#define G_DEBUG_MODE
+// TODO - move G_DEBUG macro definition to u::log
+#define G_DEBUG(x) std::cerr << __FILE__ << "::" << __func__ << "() - " << x << "\n";
 #else
-    #define G_DEBUG(x) do {} while (0)
+#define G_DEBUG(x) \
+	do             \
+	{              \
+	} while (0)
 #endif
-
 
 /* -- environment ----------------------------------------------------------- */
 #if defined(_WIN32)
-	#define G_OS_WINDOWS
+#define G_OS_WINDOWS
 #elif defined(__APPLE__)
-	#define G_OS_MAC
+#define G_OS_MAC
 #elif defined(__linux__)
-	#define G_OS_LINUX
+#define G_OS_LINUX
 #elif defined(__FreeBSD__)
-	#define G_OS_FREEBSD
+#define G_OS_FREEBSD
 #endif
 
 #ifndef BUILD_DATE
-	#define BUILD_DATE __DATE__
+#define BUILD_DATE __DATE__
 #endif
-
-
 
 /* -- version --------------------------------------------------------------- */
 constexpr auto G_APP_NAME      = "Giada";
-constexpr auto G_VERSION_STR   = "0.17.1";
+constexpr auto G_VERSION_STR   = "0.18.0";
 constexpr int  G_VERSION_MAJOR = 0;
-constexpr int  G_VERSION_MINOR = 17;
-constexpr int  G_VERSION_PATCH = 1;
+constexpr int  G_VERSION_MINOR = 18;
+constexpr int  G_VERSION_PATCH = 0;
 
 constexpr auto CONF_FILENAME = "giada.conf";
 
 #ifdef G_OS_WINDOWS
-	#define G_SLASH '\\'
-	#define G_SLASH_STR "\\"
+#define G_SLASH '\\'
+#define G_SLASH_STR "\\"
 #else
-	#define G_SLASH '/'
-	#define G_SLASH_STR "/"
+#define G_SLASH '/'
+#define G_SLASH_STR "/"
 #endif
 
+/* -- Engine ---------------------------------------------------------------- */
+/* G_EVENT_DISPATCHER_RATE_MS
+The amount of sleep between each Event Dispatcher cycle. It should be lower
+than the audio thread sleep time. Note: this value will obviously increase the 
+live input latency, keep it small! */
+constexpr int G_EVENT_DISPATCHER_RATE_MS = 5;
 
 /* -- GUI ------------------------------------------------------------------- */
 constexpr float G_GUI_REFRESH_RATE   = 1 / 30.0f; // 30 fps
@@ -82,108 +87,98 @@ constexpr float G_GUI_PLUGIN_RATE    = 1 / 30.0f; // 30 fps
 constexpr int   G_GUI_FONT_SIZE_BASE = 12;
 constexpr int   G_GUI_INNER_MARGIN   = 4;
 constexpr int   G_GUI_OUTER_MARGIN   = 8;
-constexpr int   G_GUI_UNIT           = 20;    // base unit for elements 
+constexpr int   G_GUI_UNIT           = 20; // base unit for elements
 constexpr int   G_GUI_ZOOM_FACTOR    = 2;
 
-#define G_COLOR_RED       fl_rgb_color(28,  32,  80)
-#define G_COLOR_BLUE      fl_rgb_color(113, 31,  31)
-#define G_COLOR_RED_ALERT fl_rgb_color(239, 75,  53)
-#define G_COLOR_LIGHT_2   fl_rgb_color(200, 200, 200)
-#define G_COLOR_LIGHT_1   fl_rgb_color(170, 170, 170)
-#define G_COLOR_GREY_4    fl_rgb_color(78,  78,  78)
-#define G_COLOR_GREY_3    fl_rgb_color(54,  54,  54)
-#define G_COLOR_GREY_2    fl_rgb_color(37,  37,  37)
-#define G_COLOR_GREY_1_5  fl_rgb_color(28,  28,  28)
-#define G_COLOR_GREY_1    fl_rgb_color(25,  25,  25)
-#define G_COLOR_BLACK     fl_rgb_color(0,   0,   0)
-
-
+#define G_COLOR_RED fl_rgb_color(28, 32, 80)
+#define G_COLOR_BLUE fl_rgb_color(113, 31, 31)
+#define G_COLOR_RED_ALERT fl_rgb_color(239, 75, 53)
+#define G_COLOR_LIGHT_2 fl_rgb_color(200, 200, 200)
+#define G_COLOR_LIGHT_1 fl_rgb_color(170, 170, 170)
+#define G_COLOR_GREY_4 fl_rgb_color(78, 78, 78)
+#define G_COLOR_GREY_3 fl_rgb_color(54, 54, 54)
+#define G_COLOR_GREY_2 fl_rgb_color(37, 37, 37)
+#define G_COLOR_GREY_1_5 fl_rgb_color(28, 28, 28)
+#define G_COLOR_GREY_1 fl_rgb_color(25, 25, 25)
+#define G_COLOR_BLACK fl_rgb_color(0, 0, 0)
 
 /* -- MIN/MAX values -------------------------------------------------------- */
-constexpr float  G_MIN_BPM            = 20.0f;
-constexpr auto   G_MIN_BPM_STR        = "20.0";
-constexpr float  G_MAX_BPM            = 999.0f;
-constexpr auto   G_MAX_BPM_STR        = "999.0";
-constexpr int    G_MAX_BEATS          = 32;
-constexpr int    G_MAX_BARS           = 32;
-constexpr int    G_MAX_QUANTIZE       = 8;
-constexpr float  G_MIN_DB_SCALE       = 60.0f;
-constexpr int    G_MIN_COLUMN_WIDTH   = 140;
-constexpr float  G_MAX_BOOST_DB       = 20.0f;
-constexpr float  G_MIN_PITCH          = 0.1f;
-constexpr float  G_MAX_PITCH          = 4.0f;
-constexpr float  G_MAX_PAN            = 1.0f;
-constexpr float  G_MAX_VOLUME         = 1.0f;
-constexpr int    G_MAX_GRID_VAL       = 64;
-constexpr int    G_MIN_BUF_SIZE       = 8;
-constexpr int    G_MAX_BUF_SIZE       = 4096;
-constexpr int    G_MIN_GUI_WIDTH      = 816;
-constexpr int    G_MIN_GUI_HEIGHT     = 510;
-constexpr int    G_MAX_IO_CHANS       = 2;
-constexpr int    G_MAX_VELOCITY       = 0x7F;
-constexpr int    G_MAX_MIDI_CHANS     = 16;
-constexpr int    G_MAX_POLYPHONY      = 32;
-constexpr int    G_MAX_QUEUE_EVENTS   = 32;
-constexpr int    G_MAX_QUANTIZER_SIZE = 8;
-
-
+constexpr float G_MIN_BPM               = 20.0f;
+constexpr auto  G_MIN_BPM_STR           = "20.0";
+constexpr float G_MAX_BPM               = 999.0f;
+constexpr auto  G_MAX_BPM_STR           = "999.0";
+constexpr int   G_MAX_BEATS             = 32;
+constexpr int   G_MAX_BARS              = 32;
+constexpr int   G_MAX_QUANTIZE          = 8;
+constexpr float G_MIN_DB_SCALE          = 60.0f;
+constexpr int   G_MIN_COLUMN_WIDTH      = 140;
+constexpr float G_MAX_BOOST_DB          = 20.0f;
+constexpr float G_MIN_PITCH             = 0.1f;
+constexpr float G_MAX_PITCH             = 4.0f;
+constexpr float G_MAX_PAN               = 1.0f;
+constexpr float G_MAX_VOLUME            = 1.0f;
+constexpr int   G_MAX_GRID_VAL          = 64;
+constexpr int   G_MIN_BUF_SIZE          = 8;
+constexpr int   G_MAX_BUF_SIZE          = 4096;
+constexpr int   G_MIN_GUI_WIDTH         = 816;
+constexpr int   G_MIN_GUI_HEIGHT        = 510;
+constexpr int   G_MAX_IO_CHANS          = 2;
+constexpr int   G_MAX_VELOCITY          = 0x7F;
+constexpr int   G_MAX_MIDI_CHANS        = 16;
+constexpr int   G_MAX_POLYPHONY         = 32;
+constexpr int   G_MAX_DISPATCHER_EVENTS = 32;
+constexpr int   G_MAX_SEQUENCER_EVENTS  = 128; // Per block
+constexpr int   G_MAX_QUANTIZER_SIZE    = 32;
 
 /* -- kernel audio ---------------------------------------------------------- */
-constexpr int G_SYS_API_NONE   = 0x00;  // 0000 0000
-constexpr int G_SYS_API_JACK   = 0x01;  // 0000 0001
-constexpr int G_SYS_API_ALSA   = 0x02;  // 0000 0010
-constexpr int G_SYS_API_DS     = 0x04;  // 0000 0100
-constexpr int G_SYS_API_ASIO   = 0x08;  // 0000 1000
-constexpr int G_SYS_API_CORE   = 0x10;  // 0001 0000
-constexpr int G_SYS_API_PULSE  = 0x20;  // 0010 0000
-constexpr int G_SYS_API_WASAPI = 0x40;  // 0100 0000
-constexpr int G_SYS_API_ANY    = 0x7F;  // 0111 1111
-
-
+constexpr int G_SYS_API_NONE   = 0;
+constexpr int G_SYS_API_JACK   = 1;
+constexpr int G_SYS_API_ALSA   = 2;
+constexpr int G_SYS_API_DS     = 3;
+constexpr int G_SYS_API_ASIO   = 4;
+constexpr int G_SYS_API_CORE   = 5;
+constexpr int G_SYS_API_PULSE  = 6;
+constexpr int G_SYS_API_WASAPI = 7;
 
 /* -- kernel midi ----------------------------------------------------------- */
-constexpr int G_MIDI_API_JACK = 0x01;  // 0000 0001
-constexpr int G_MIDI_API_ALSA = 0x02;  // 0000 0010
-
-
+constexpr int G_MIDI_API_JACK = 0x01; // 0000 0001
+constexpr int G_MIDI_API_ALSA = 0x02; // 0000 0010
 
 /* -- default system -------------------------------------------------------- */
 #if defined(G_OS_LINUX)
-	#define G_DEFAULT_SOUNDSYS	G_SYS_API_NONE
+#define G_DEFAULT_SOUNDSYS G_SYS_API_NONE
 #elif defined(G_OS_FREEBSD)
-	#define G_DEFAULT_SOUNDSYS	G_SYS_API_PULSE
+#define G_DEFAULT_SOUNDSYS G_SYS_API_PULSE
 #elif defined(G_OS_WINDOWS)
-	#define G_DEFAULT_SOUNDSYS 	G_SYS_API_DS
+#define G_DEFAULT_SOUNDSYS G_SYS_API_DS
 #elif defined(G_OS_MAC)
-	#define G_DEFAULT_SOUNDSYS 	G_SYS_API_CORE
+#define G_DEFAULT_SOUNDSYS G_SYS_API_CORE
 #endif
 
-constexpr int   G_DEFAULT_SOUNDDEV_OUT        = 0;      // FIXME - please override with rtAudio::getDefaultDevice (or similar)
-constexpr int   G_DEFAULT_SOUNDDEV_IN         = -1;     // no recording by default: input disabled
+constexpr int   G_DEFAULT_SOUNDDEV_OUT        = -1; // disabled by default
+constexpr int   G_DEFAULT_SOUNDDEV_IN         = -1; // disabled by default
 constexpr int   G_DEFAULT_MIDI_SYSTEM         = 0;
 constexpr int   G_DEFAULT_MIDI_PORT_IN        = -1;
 constexpr int   G_DEFAULT_MIDI_PORT_OUT       = -1;
 constexpr int   G_DEFAULT_SAMPLERATE          = 44100;
 constexpr int   G_DEFAULT_BUFSIZE             = 1024;
-constexpr int   G_DEFAULT_BIT_DEPTH           = 32;     // float
+constexpr int   G_DEFAULT_BIT_DEPTH           = 32;
 constexpr float G_DEFAULT_VOL                 = 1.0f;
 constexpr float G_DEFAULT_PAN                 = 0.5f;
 constexpr float G_DEFAULT_PITCH               = 1.0f;
 constexpr float G_DEFAULT_BPM                 = 120.0f;
 constexpr int   G_DEFAULT_BEATS               = 4;
 constexpr int   G_DEFAULT_BARS                = 1;
-constexpr int   G_DEFAULT_QUANTIZE            = 0;      // quantizer off
-constexpr float G_DEFAULT_FADEOUT_STEP        = 0.01f;  // micro-fadeout speed
+constexpr int   G_DEFAULT_QUANTIZE            = 0;     // quantizer off
+constexpr float G_DEFAULT_FADEOUT_STEP        = 0.01f; // micro-fadeout speed
 constexpr int   G_DEFAULT_COLUMN_WIDTH        = 380;
 constexpr auto  G_DEFAULT_PATCH_NAME          = "(default patch)";
-constexpr int   G_DEFAULT_ACTION_SIZE         = 8192;  // frames
+constexpr int   G_DEFAULT_ACTION_SIZE         = 8192; // frames
 constexpr int   G_DEFAULT_ZOOM_RATIO          = 128;
 constexpr float G_DEFAULT_REC_TRIGGER_LEVEL   = -10.0f;
 constexpr int   G_DEFAULT_SUBWINDOW_W         = 640;
 constexpr int   G_DEFAULT_SUBWINDOW_H         = 480;
-constexpr int   G_DEFAULT_VST_MIDIBUFFER_SIZE = 1024;  // TODO - not 100% sure about this size
-
-
+constexpr int   G_DEFAULT_VST_MIDIBUFFER_SIZE = 1024; // TODO - not 100% sure about this size
 
 /* -- responses and return codes -------------------------------------------- */
 constexpr int G_RES_ERR_PROCESSING    = -6;
@@ -192,17 +187,13 @@ constexpr int G_RES_ERR_NO_DATA       = -4;
 constexpr int G_RES_ERR_PATH_TOO_LONG = -3;
 constexpr int G_RES_ERR_IO            = -2;
 constexpr int G_RES_ERR_MEMORY        = -1;
-constexpr int G_RES_ERR               =  0;
-constexpr int G_RES_OK                =  1;
-
-
+constexpr int G_RES_ERR               = 0;
+constexpr int G_RES_OK                = 1;
 
 /* -- log modes ------------------------------------------------------------- */
 constexpr int LOG_MODE_STDOUT = 0x01;
 constexpr int LOG_MODE_FILE   = 0x02;
 constexpr int LOG_MODE_MUTE   = 0x04;
-
-
 
 /* -- unique IDs of mainWin's subwindows ------------------------------------ */
 /* -- wid > 0 are reserved by gg_keyboard ----------------------------------- */
@@ -221,23 +212,17 @@ constexpr int WID_FX_CHOOSER    = -12;
 constexpr int WID_MIDI_INPUT    = -13;
 constexpr int WID_MIDI_OUTPUT   = -14;
 
-
-
 /* -- patch signals --------------------------------------------------------- */
 constexpr int G_PATCH_UNSUPPORTED = -2;
 constexpr int G_PATCH_UNREADABLE  = -1;
-constexpr int G_PATCH_INVALID     =  0;
-constexpr int G_PATCH_OK          =  1;
-
-
+constexpr int G_PATCH_INVALID     = 0;
+constexpr int G_PATCH_OK          = 1;
 
 /* -- midimap signals ------------------------------------------------------- */
 constexpr int MIDIMAP_NOT_SPECIFIED = 0x00;
 constexpr int MIDIMAP_UNREADABLE    = 0x01;
 constexpr int MIDIMAP_INVALID       = 0x02;
 constexpr int MIDIMAP_READ_OK       = 0x04;
-
-
 
 /* -- MIDI in parameters (for MIDI learning) -------------------------------- */
 constexpr int G_MIDI_IN_ENABLED      = 1;
@@ -261,16 +246,12 @@ constexpr int G_MIDI_IN_VOLUME       = 18;
 constexpr int G_MIDI_IN_PITCH        = 19;
 constexpr int G_MIDI_IN_READ_ACTIONS = 20;
 
-
-
 /* -- MIDI out parameters (for MIDI output and lightning) ------------------- */
-constexpr int G_MIDI_OUT_ENABLED    = 1;
-constexpr int G_MIDI_OUT_L_ENABLED  = 2;
-constexpr int G_MIDI_OUT_L_PLAYING  = 3;
-constexpr int G_MIDI_OUT_L_MUTE     = 4;
-constexpr int G_MIDI_OUT_L_SOLO     = 5;
-
-
+constexpr int G_MIDI_OUT_ENABLED   = 1;
+constexpr int G_MIDI_OUT_L_ENABLED = 2;
+constexpr int G_MIDI_OUT_L_PLAYING = 3;
+constexpr int G_MIDI_OUT_L_MUTE    = 4;
+constexpr int G_MIDI_OUT_L_SOLO    = 5;
 
 /* -- MIDI signals -------------------------------------------------------------
 Channel voices messages - controller (0xB0) is a special subset of this family:
@@ -288,15 +269,15 @@ constexpr int MIDI_CLOCK        = 0xF8;
 constexpr int MIDI_START        = 0xFA;
 constexpr int MIDI_CONTINUE     = 0xFB;
 constexpr int MIDI_STOP         = 0xFC;
-constexpr int MIDI_EOX          = 0xF7;  // end of sysex
+constexpr int MIDI_EOX          = 0xF7; // end of sysex
 
 /* midi sync constants */
 
 constexpr int MIDI_SYNC_NONE    = 0x00;
-constexpr int MIDI_SYNC_CLOCK_M = 0x01;  // master
-constexpr int MIDI_SYNC_CLOCK_S = 0x02;  // slave
-constexpr int MIDI_SYNC_MTC_M   = 0x04;  // master
-constexpr int MIDI_SYNC_MTC_S   = 0x08;  // slave
+constexpr int MIDI_SYNC_CLOCK_M = 0x01; // master
+constexpr int MIDI_SYNC_CLOCK_S = 0x02; // slave
+constexpr int MIDI_SYNC_MTC_M   = 0x04; // master
+constexpr int MIDI_SYNC_MTC_S   = 0x08; // slave
 
 /* JSON patch keys */
 
@@ -378,20 +359,22 @@ constexpr auto PATCH_KEY_COLUMN_ID                    = "id";
 constexpr auto PATCH_KEY_COLUMN_WIDTH                 = "width";
 constexpr auto PATCH_KEY_COLUMN_CHANNELS              = "channels";
 constexpr auto G_PATCH_KEY_ACTION_ID                  = "id";
-constexpr auto G_PATCH_KEY_ACTION_CHANNEL             = "channel";     
-constexpr auto G_PATCH_KEY_ACTION_FRAME               = "frame";   
-constexpr auto G_PATCH_KEY_ACTION_EVENT               = "event";   
-constexpr auto G_PATCH_KEY_ACTION_PREV                = "prev";  
+constexpr auto G_PATCH_KEY_ACTION_CHANNEL             = "channel";
+constexpr auto G_PATCH_KEY_ACTION_FRAME               = "frame";
+constexpr auto G_PATCH_KEY_ACTION_EVENT               = "event";
+constexpr auto G_PATCH_KEY_ACTION_PREV                = "prev";
 constexpr auto G_PATCH_KEY_ACTION_NEXT                = "next";
 
 /* JSON config keys */
 
 constexpr auto CONF_KEY_HEADER                        = "header";
 constexpr auto CONF_KEY_LOG_MODE                      = "log_mode";
+constexpr auto CONF_KEY_SHOW_TOOLTIPS                 = "show_tooltips";
 constexpr auto CONF_KEY_SOUND_SYSTEM                  = "sound_system";
 constexpr auto CONF_KEY_SOUND_DEVICE_IN               = "sound_device_in";
 constexpr auto CONF_KEY_SOUND_DEVICE_OUT              = "sound_device_out";
-constexpr auto CONF_KEY_CHANNELS_OUT                  = "channels_out";
+constexpr auto CONF_KEY_CHANNELS_OUT_COUNT            = "channels_out_count";
+constexpr auto CONF_KEY_CHANNELS_OUT_START            = "channels_out_start";
 constexpr auto CONF_KEY_CHANNELS_IN_COUNT             = "channels_in_count";
 constexpr auto CONF_KEY_CHANNELS_IN_START             = "channels_in_start";
 constexpr auto CONF_KEY_SAMPLERATE                    = "samplerate";
@@ -466,6 +449,7 @@ constexpr auto CONF_KEY_MIDI_INPUT_H                  = "midi_input_h";
 constexpr auto CONF_KEY_PLUGIN_SORT_METHOD            = "plugin_sort_method";
 constexpr auto CONF_KEY_REC_TRIGGER_MODE              = "rec_trigger_mode";
 constexpr auto CONF_KEY_REC_TRIGGER_LEVEL             = "rec_trigger_level";
+constexpr auto CONF_KEY_INPUT_REC_MODE                = "input_rec_mode";
 
 /* JSON midimaps keys */
 

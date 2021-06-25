@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,125 +26,103 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #include <filesystem>
-#if defined(_WIN32)			// getcwd (unix) or __getcwd (win)
-	#include <direct.h>
-	#include <windows.h>
+#if defined(_WIN32) // getcwd (unix) or __getcwd (win)
+#include <direct.h>
+#include <windows.h>
 #else
-	#include <unistd.h>
+#include <unistd.h>
 #endif
-#include <cstdarg>
-#include <sys/stat.h>       // stat (fs::dirExists)
-#include <errno.h>
-#include <cstdlib>
-#include <cstdint>
-#include <string>
-#include <cstring>
 #include <climits>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <errno.h>
+#include <string>
+#include <sys/stat.h> // stat (fs::dirExists)
 #ifdef __APPLE__
-	#include <libgen.h>     // basename unix
-	#include <pwd.h>        // getpwuid
+#include <libgen.h> // basename unix
+#include <pwd.h>    // getpwuid
 #endif
 #include "core/const.h"
-#include "utils/string.h"
-#include "utils/log.h"
 #include "utils/fs.h"
+#include "utils/log.h"
+#include "utils/string.h"
 
+namespace stdfs = std::filesystem;
 
-namespace giada {
-namespace u     {
-namespace fs 
+namespace giada::u::fs
 {
 bool fileExists(const std::string& s)
 {
-	return std::filesystem::exists(s);
+	return stdfs::exists(s);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool isDir(const std::string& s)
 {
-	return std::filesystem::is_directory(s) && !isProject(s);
+	return stdfs::is_directory(s) && !isProject(s);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool dirExists(const std::string& s)
-{ 
-	return std::filesystem::exists(s);
+{
+	return stdfs::exists(s);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool mkdir(const std::string& s)
 {
-	return dirExists(s) ? true : std::filesystem::create_directory(s);
+	return dirExists(s) ? true : stdfs::create_directory(s);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string getRealPath(const std::string& s)
 {
-	return s.empty() ? "" : std::filesystem::canonical(s).string();
+	return s.empty() || !stdfs::exists(s) ? "" : stdfs::canonical(s).string();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string basename(const std::string& s)
 {
-	return std::filesystem::path(s).filename().string();
+	return stdfs::path(s).filename().string();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string dirname(const std::string& s)
 {
-	return std::filesystem::path(s).parent_path().string();
+	return stdfs::path(s).parent_path().string();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string getCurrentPath()
 {
-	return std::filesystem::current_path().string();
+	return stdfs::current_path().string();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string getExt(const std::string& s)
 {
-	return std::filesystem::path(s).extension().string();
+	return stdfs::path(s).extension().string();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string stripExt(const std::string& s)
 {
-	return std::filesystem::path(s).replace_extension("").string();
+	return stdfs::path(s).replace_extension("").string();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool isProject(const std::string& s)
 {
@@ -152,21 +130,17 @@ bool isProject(const std::string& s)
 	return getExt(s) == ".gprj";
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string stripFileUrl(const std::string& s)
 {
 	std::string out = s;
-	out = u::string::replace(out, "file://", "");
-	out = u::string::replace(out, "%20", " ");
+	out             = u::string::replace(out, "file://", "");
+	out             = u::string::replace(out, "%20", " ");
 	return out;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string getHomePath()
 {
@@ -182,9 +156,10 @@ std::string getHomePath()
 
 #elif defined(G_OS_MAC)
 
-	char buf[PATH_MAX];
+	char           buf[PATH_MAX];
 	struct passwd* pwd = getpwuid(getuid());
-	if (pwd == nullptr) {
+	if (pwd == nullptr)
+	{
 		log::print("[getHomePath] unable to fetch user infos\n");
 		return "";
 	}
@@ -193,32 +168,28 @@ std::string getHomePath()
 
 #endif
 
-	return std::filesystem::path(buf).string();
+	return stdfs::path(buf).string();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool isRootDir(const std::string& s)
 {
-	return std::filesystem::current_path().root_directory() == s;
+	return stdfs::current_path().root_directory() == s;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string getUpDir(const std::string& s)
 {
 #ifdef G_OS_WINDOWS
 
-	// If root, let the user browse the drives list by returning "". 
+	// If root, let the user browse the drives list by returning "".
 	if (isRootDir(s))
 		return "";
 
 #endif
 
-	return std::filesystem::path(s).parent_path().string();
+	return stdfs::path(s).parent_path().string();
 }
-}}}  // giada::u::fs::
+} // namespace giada::u::fs

@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,35 +26,27 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_CHANNEL_STATUS_H
 #define GE_CHANNEL_STATUS_H
 
-
 #include <FL/Fl_Box.H>
 
-
-namespace giada {
-namespace c {
-namespace channel
+namespace giada::c::channel
 {
 struct Data;
-}}
-namespace v
+}
+namespace giada::v
 {
 class geChannelStatus : public Fl_Box
 {
 public:
-
 	geChannelStatus(int x, int y, int w, int h, c::channel::Data& d);
 
 	void draw() override;
 
 private:
-
 	c::channel::Data& m_channel;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

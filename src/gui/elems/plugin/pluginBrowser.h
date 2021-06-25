@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,36 +24,31 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
-
 
 #ifndef GE_PLUGIN_BROWSER_H
 #define GE_PLUGIN_BROWSER_H
 
-
 #include <FL/Fl_Browser.H>
 
-
-namespace giada {
+namespace giada
+{
 namespace v
 {
 class gePluginBrowser : public Fl_Browser
 {
 public:
-
 	gePluginBrowser(int x, int y, int w, int h);
 
 	void refresh();
 
-private:
+  private:
+	void computeWidths();
 
-    void computeWidths();
-
-    int widths[5] = {0};
+	int widths[5] = {0};
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif
 

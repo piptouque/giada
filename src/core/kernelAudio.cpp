@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,45 +26,150 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include "deps/rtaudio/RtAudio.h"
-#include "utils/log.h"
-#include "glue/main.h"
-#include "core/model/model.h"
+#include "kernelAudio.h"
 #include "conf.h"
 #include "const.h"
+#include "core/clock.h"
+#include "core/mixerHandler.h"
+#include "core/model/model.h"
+#include "core/recManager.h"
+#include "deps/rtaudio/RtAudio.h"
+#include "glue/main.h"
 #include "mixer.h"
-#include "const.h"
-#include "kernelAudio.h"
-
+#include "utils/log.h"
+#include "utils/vector.h"
 
 namespace giada::m::kernelAudio
 {
 namespace
 {
-RtAudio* rtSystem     = nullptr;
-unsigned numDevs      = 0;
-bool     inputEnabled = false;
-unsigned realBufsize  = 0;     // Real buffer size from the soundcard
-int      api          = 0;
+std::vector<Device> devices_;
+RtAudio*            rtSystem_     = nullptr;
+bool                inputEnabled_ = false;
+unsigned            realBufsize_  = 0; // Real buffer size from the soundcard
+int                 api_          = 0;
+
+/* -------------------------------------------------------------------------- */
 
 #ifdef WITH_AUDIO_JACK
 
-JackState jackState;
-
 jack_client_t* jackGetHandle_()
 {
-	return static_cast<jack_client_t*>(rtSystem->HACK__getJackClient());
+	return static_cast<jack_client_t*>(rtSystem_->HACK__getJackClient());
 }
 
 #endif
-}  // {anonymous}
 
+/* -------------------------------------------------------------------------- */
+
+Device fetchDevice_(size_t deviceIndex)
+{
+	try
+	{
+		RtAudio::DeviceInfo info = rtSystem_->getDeviceInfo(deviceIndex);
+
+		if (!info.probed)
+		{
+			u::log::print("[KA] Can't probe device %d\n", deviceIndex);
+			return {deviceIndex};
+		}
+
+		return {
+		    deviceIndex,
+		    true,
+		    info.name,
+		    static_cast<int>(info.outputChannels),
+		    static_cast<int>(info.inputChannels),
+		    static_cast<int>(info.duplexChannels),
+		    info.isDefaultOutput,
+		    info.isDefaultInput,
+		    u::vector::cast<int>(info.sampleRates)};
+	}
+	catch (RtAudioError& e)
+	{
+		u::log::print("[KA] Error fetching device %d: %s\n", deviceIndex, e.getMessage());
+		return {0};
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+std::vector<Device> fetchDevices_()
+{
+	std::vector<Device> out;
+	for (unsigned i = 0; i < rtSystem_->getDeviceCount(); i++)
+		out.push_back(fetchDevice_(i));
+	return out;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void printDevices_(const std::vector<Device>& devices)
+{
+	u::log::print("[KA] %d device(s) found\n", devices.size());
+	for (const Device& d : devices)
+	{
+		u::log::print("  %d) %s\n", d.index, d.name);
+		u::log::print("      ins=%d outs=%d duplex=%d\n", d.maxInputChannels, d.maxOutputChannels, d.maxDuplexChannels);
+		u::log::print("      isDefaultOut=%d isDefaultIn=%d\n", d.isDefaultOut, d.isDefaultIn);
+		u::log::print("      sampleRates:\n\t");
+		for (int s : d.sampleRates)
+			u::log::print("%d ", s);
+		u::log::print("\n");
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool canRender_()
+{
+	return model::get().kernel.audioReady && model::get().mixer.state->active.load() == true;
+}
+
+/* -------------------------------------------------------------------------- */
+
+int callback_(void* outBuf, void* inBuf, unsigned bufferSize, double /*streamTime*/,
+    RtAudioStreamStatus /*status*/, void* /*userData*/)
+{
+	AudioBuffer out(static_cast<float*>(outBuf), bufferSize, G_MAX_IO_CHANS);
+	AudioBuffer in;
+	if (isInputEnabled())
+		in = AudioBuffer(static_cast<float*>(inBuf), bufferSize, conf::conf.channelsInCount);
+
+	/* Clean up output buffer before any rendering. Do this even if mixer is
+	disabled to avoid audio leftovers during a temporary suspension (e.g. when
+	loading a new patch). */
+
+	out.clear();
+
+	if (!canRender_())
+		return 0;
+
+#ifdef WITH_AUDIO_JACK
+	if (getAPI() == G_SYS_API_JACK)
+		clock::recvJackSync();
+#endif
+
+	mixer::RenderInfo info;
+	info.isAudioReady    = model::get().kernel.audioReady;
+	info.hasInput        = isInputEnabled();
+	info.isClockActive   = clock::isActive();
+	info.isClockRunning  = clock::isRunning();
+	info.canLineInRec    = recManager::isRecordingInput() && isInputEnabled();
+	info.limitOutput     = conf::conf.limitOutput;
+	info.inToOut         = mh::getInToOut();
+	info.maxFramesToRec  = conf::conf.inputRecMode == InputRecMode::FREE ? clock::getMaxFramesInLoop() : clock::getFramesInLoop();
+	info.outVol          = mh::getOutVol();
+	info.inVol           = mh::getInVol();
+	info.recTriggerLevel = conf::conf.recTriggerLevel;
+
+	return mixer::render(out, in, info);
+}
+} // namespace
 
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-
 
 #ifdef WITH_AUDIO_JACK
 
@@ -75,374 +180,217 @@ bool JackState::operator!=(const JackState& o) const
 
 #endif
 
-
 /* -------------------------------------------------------------------------- */
-
 
 bool isReady()
 {
-	model::KernelLock lock(model::kernel);
-	return model::kernel.get()->audioReady;
+	return model::get().kernel.audioReady;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
 int openDevice()
 {
-	api = conf::conf.soundSystem;
-	u::log::print("[KA] using system 0x%x\n", api);
+	api_ = conf::conf.soundSystem;
+	u::log::print("[KA] using system 0x%x\n", api_);
 
 #if defined(__linux__) || defined(__FreeBSD__)
 
-	if (api == G_SYS_API_JACK && hasAPI(RtAudio::UNIX_JACK))
-		rtSystem = new RtAudio(RtAudio::UNIX_JACK);
-	else
-	if (api == G_SYS_API_ALSA && hasAPI(RtAudio::LINUX_ALSA))
-		rtSystem = new RtAudio(RtAudio::LINUX_ALSA);
-	else
-	if (api == G_SYS_API_PULSE && hasAPI(RtAudio::LINUX_PULSE))
-		rtSystem = new RtAudio(RtAudio::LINUX_PULSE);
+	if (api_ == G_SYS_API_JACK && hasAPI(RtAudio::UNIX_JACK))
+		rtSystem_ = new RtAudio(RtAudio::UNIX_JACK);
+	else if (api_ == G_SYS_API_ALSA && hasAPI(RtAudio::LINUX_ALSA))
+		rtSystem_ = new RtAudio(RtAudio::LINUX_ALSA);
+	else if (api_ == G_SYS_API_PULSE && hasAPI(RtAudio::LINUX_PULSE))
+		rtSystem_ = new RtAudio(RtAudio::LINUX_PULSE);
 
 #elif defined(__FreeBSD__)
 
-	if (api == G_SYS_API_JACK && hasAPI(RtAudio::UNIX_JACK))
-		rtSystem = new RtAudio(RtAudio::UNIX_JACK);
-	else
-	if (api == G_SYS_API_PULSE && hasAPI(RtAudio::LINUX_PULSE))
-		rtSystem = new RtAudio(RtAudio::LINUX_PULSE);
+	if (api_ == G_SYS_API_JACK && hasAPI(RtAudio::UNIX_JACK))
+		rtSystem_ = new RtAudio(RtAudio::UNIX_JACK);
+	else if (api_ == G_SYS_API_PULSE && hasAPI(RtAudio::LINUX_PULSE))
+		rtSystem_ = new RtAudio(RtAudio::LINUX_PULSE);
 
 #elif defined(_WIN32)
 
-	if (api == G_SYS_API_DS && hasAPI(RtAudio::WINDOWS_DS))
-		rtSystem = new RtAudio(RtAudio::WINDOWS_DS);
-	else
-	if (api == G_SYS_API_ASIO && hasAPI(RtAudio::WINDOWS_ASIO))
-		rtSystem = new RtAudio(RtAudio::WINDOWS_ASIO);
-	else
-	if (api == G_SYS_API_WASAPI && hasAPI(RtAudio::WINDOWS_WASAPI))
-		rtSystem = new RtAudio(RtAudio::WINDOWS_WASAPI);
+	if (api_ == G_SYS_API_DS && hasAPI(RtAudio::WINDOWS_DS))
+		rtSystem_ = new RtAudio(RtAudio::WINDOWS_DS);
+	else if (api_ == G_SYS_API_ASIO && hasAPI(RtAudio::WINDOWS_ASIO))
+		rtSystem_ = new RtAudio(RtAudio::WINDOWS_ASIO);
+	else if (api_ == G_SYS_API_WASAPI && hasAPI(RtAudio::WINDOWS_WASAPI))
+		rtSystem_ = new RtAudio(RtAudio::WINDOWS_WASAPI);
 
 #elif defined(__APPLE__)
 
-	if (api == G_SYS_API_CORE && hasAPI(RtAudio::MACOSX_CORE))
-		rtSystem = new RtAudio(RtAudio::MACOSX_CORE);
+	if (api_ == G_SYS_API_CORE && hasAPI(RtAudio::MACOSX_CORE))
+		rtSystem_ = new RtAudio(RtAudio::MACOSX_CORE);
 
 #endif
 
-	else {
+	else
+	{
 		u::log::print("[KA] No API available, nothing to do!\n");
 		return 0;
 	}
 
 	u::log::print("[KA] Opening device out=%d, in=%d, samplerate=%d\n",
-    conf::conf.soundDeviceOut, conf::conf.soundDeviceIn, conf::conf.samplerate);
+	    conf::conf.soundDeviceOut, conf::conf.soundDeviceIn, conf::conf.samplerate);
 
-	numDevs = rtSystem->getDeviceCount();
+	devices_ = fetchDevices_();
+	printDevices_(devices_);
 
-	if (numDevs < 1) {
-		u::log::print("[KA] no devices found with this API\n");
+	/* Abort here if devices found are zero. */
+
+	if (devices_.size() == 0)
+	{
 		closeDevice();
 		return 0;
-	}
-	else {
-		u::log::print("[KA] %d device(s) found\n", numDevs);
-		for (unsigned i=0; i<numDevs; i++)
-			u::log::print("  %d) %s\n", i, getDeviceName(i));
 	}
 
 	RtAudio::StreamParameters outParams;
 	RtAudio::StreamParameters inParams;
 
-	outParams.deviceId     = conf::conf.soundDeviceOut == G_DEFAULT_SOUNDDEV_OUT ? getDefaultOut() : conf::conf.soundDeviceOut;
-	outParams.nChannels    = G_MAX_IO_CHANS;
-	outParams.firstChannel = conf::conf.channelsOut * G_MAX_IO_CHANS; // chan 0=0, 1=2, 2=4, ...
+	outParams.deviceId     = conf::conf.soundDeviceOut == G_DEFAULT_SOUNDDEV_OUT ? rtSystem_->getDefaultOutputDevice() : conf::conf.soundDeviceOut;
+	outParams.nChannels    = conf::conf.channelsOutCount;
+	outParams.firstChannel = conf::conf.channelsOutStart;
 
 	/* Input device can be disabled. Unlike the output, here we are using all
 	channels and let the user choose which one to record from in the configuration
 	panel. */
 
-	if (conf::conf.soundDeviceIn != -1) {
+	if (conf::conf.soundDeviceIn != -1)
+	{
 		inParams.deviceId     = conf::conf.soundDeviceIn;
 		inParams.nChannels    = conf::conf.channelsInCount;
 		inParams.firstChannel = conf::conf.channelsInStart;
-		inputEnabled = true;
+		inputEnabled_         = true;
 	}
 	else
-		inputEnabled = false;
+		inputEnabled_ = false;
 
 	RtAudio::StreamOptions options;
-	options.streamName = G_APP_NAME;
-	options.numberOfBuffers = 4;
+	options.streamName      = G_APP_NAME;
+	options.numberOfBuffers = 4; // TODO - wtf?
 
-	realBufsize = conf::conf.buffersize;
+	realBufsize_ = conf::conf.buffersize;
 
 #ifdef WITH_AUDIO_JACK
 
-	if (api == G_SYS_API_JACK) {
-		conf::conf.samplerate = getFreq(conf::conf.soundDeviceOut, 0);
+	if (api_ == G_SYS_API_JACK)
+	{
+		conf::conf.samplerate = devices_[conf::conf.soundDeviceOut].sampleRates[0];
 		u::log::print("[KA] JACK in use, samplerate=%d\n", conf::conf.samplerate);
 	}
 
 #endif
 
-	try {
-		rtSystem->openStream(
-			&outParams,                                            // output params
-			conf::conf.soundDeviceIn != -1 ? &inParams : nullptr,  // input params if inDevice is selected
-			RTAUDIO_FLOAT32,                                       // audio format
-			conf::conf.samplerate,                                 // sample rate
-			&realBufsize,                                          // buffer size in byte
-			&mixer::masterPlay,                                    // audio callback
-			nullptr,                                               // user data (unused)
-			&options);
-		
-		model::onSwap(model::kernel, [](model::Kernel& k) {
-			k.audioReady = true;
-		});
+	try
+	{
+		rtSystem_->openStream(
+		    &outParams,                                           // output params
+		    conf::conf.soundDeviceIn != -1 ? &inParams : nullptr, // input params if inDevice is selected
+		    RTAUDIO_FLOAT32,                                      // audio format
+		    conf::conf.samplerate,                                // sample rate
+		    &realBufsize_,                                        // buffer size in byte
+		    &callback_,                                           // audio callback
+		    nullptr,                                              // user data (unused)
+		    &options);
+
+		model::get().kernel.audioReady = true;
+		model::swap(model::SwapType::NONE);
 		return 1;
 	}
-	catch (RtAudioError &e) {
-		u::log::print("[KA] rtSystem init error: %s\n", e.getMessage());
+	catch (RtAudioError& e)
+	{
+		u::log::print("[KA] rtSystem_ init error: %s\n", e.getMessage());
 		closeDevice();
 		return 0;
 	}
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 int startStream()
 {
-	try {
-		rtSystem->startStream();
-		u::log::print("[KA] latency = %lu\n", rtSystem->getStreamLatency());
+	try
+	{
+		rtSystem_->startStream();
+		u::log::print("[KA] latency = %lu\n", rtSystem_->getStreamLatency());
 		return 1;
 	}
-	catch (RtAudioError &e) {
+	catch (RtAudioError& e)
+	{
 		u::log::print("[KA] Start stream error: %s\n", e.getMessage());
 		return 0;
 	}
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 int stopStream()
 {
-	try {
-		rtSystem->stopStream();
+	try
+	{
+		rtSystem_->stopStream();
 		return 1;
 	}
-	catch (RtAudioError& /*e*/) {
+	catch (RtAudioError& /*e*/)
+	{
 		u::log::print("[KA] Stop stream error\n");
 		return 0;
 	}
 }
 
-
 /* -------------------------------------------------------------------------- */
-
-
-std::string getDeviceName(unsigned dev)
-{
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).name;
-	}
-	catch (RtAudioError& /*e*/) {
-		u::log::print("[KA] invalid device ID = %d\n", dev);
-		return "";
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 
 int closeDevice()
 {
-	if (rtSystem->isStreamOpen()) {
-		rtSystem->stopStream();
-		rtSystem->closeStream();
-		delete rtSystem;
-		rtSystem = nullptr;
+	if (rtSystem_->isStreamOpen())
+	{
+		rtSystem_->stopStream();
+		rtSystem_->closeStream();
+		delete rtSystem_;
+		rtSystem_ = nullptr;
 	}
 	return 1;
 }
 
+/* -------------------------------------------------------------------------- */
+
+unsigned getRealBufSize() { return realBufsize_; }
+bool     isInputEnabled() { return inputEnabled_; }
 
 /* -------------------------------------------------------------------------- */
 
-
-unsigned getMaxInChans(int dev)
+Device getDevice(const char* name)
 {
-	if (dev == -1) return 0;
-
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).inputChannels;
-	}
-	catch (RtAudioError& /*e*/) {
-		u::log::print("[KA] Unable to get input channels\n");
-		return 0;
-	}
+	for (Device device : devices_)
+		if (name == device.name)
+			return device;
+	return {0, false};
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-unsigned getMaxOutChans(unsigned dev)
+const std::vector<Device>& getDevices()
 {
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).outputChannels;
-	}
-	catch (RtAudioError& /*e*/) {
-		u::log::print("[KA] Unable to get output channels\n");
-		return 0;
-	}
+	return devices_;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
-
-bool isProbed(unsigned dev)
-{
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).probed;
-	}
-	catch (RtAudioError& /*e*/) {
-		return 0;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-unsigned getDuplexChans(unsigned dev)
-{
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).duplexChannels;
-	}
-	catch (RtAudioError& /*e*/) {
-		return 0;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-bool isDefaultIn(unsigned dev)
-{
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).isDefaultInput;
-	}
-	catch (RtAudioError& /*e*/) {
-		return 0;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-bool isDefaultOut(unsigned dev)
-{
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).isDefaultOutput;
-	}
-	catch (RtAudioError& /*e*/) {
-		return 0;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-int getTotalFreqs(unsigned dev)
-{
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).sampleRates.size();
-	}
-	catch (RtAudioError& /*e*/) {
-		return 0;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-int	getFreq(unsigned dev, int i)
-{
-	try {
-		return static_cast<RtAudio::DeviceInfo>(rtSystem->getDeviceInfo(dev)).sampleRates.at(i);
-	}
-	catch (RtAudioError& /*e*/) {
-		return 0;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-unsigned getRealBufSize() { return realBufsize; }
-bool isInputEnabled() { return inputEnabled; }
-unsigned countDevices() { return numDevs; }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-int getDefaultIn()
-{
-	return rtSystem->getDefaultInputDevice();
-}
-
-int getDefaultOut()
-{
-	return rtSystem->getDefaultOutputDevice();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-int	getDeviceByName(const char* name)
-{
-	for (unsigned i=0; i<numDevs; i++)
-		if (name == getDeviceName(i))
-			return i;
-	return -1;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 
 bool hasAPI(int API)
 {
 	std::vector<RtAudio::Api> APIs;
 	RtAudio::getCompiledApi(APIs);
-	for (unsigned i=0; i<APIs.size(); i++)
+	for (unsigned i = 0; i < APIs.size(); i++)
 		if (APIs.at(i) == API)
 			return true;
 	return false;
 }
 
-
-int getAPI() { return api; }
-
+int getAPI() { return api_; }
 
 /* -------------------------------------------------------------------------- */
-
 
 void logCompiledAPIs()
 {
@@ -451,102 +399,102 @@ void logCompiledAPIs()
 
 	u::log::print("[KA] Compiled RtAudio APIs: %d\n", APIs.size());
 
-	for (const RtAudio::Api& api : APIs) {
-		switch (api) {
-			case RtAudio::Api::LINUX_ALSA:
-				u::log::print("  ALSA\n"); break;
-			case RtAudio::Api::LINUX_PULSE:
-				u::log::print("  PulseAudio\n"); break;
-			case RtAudio::Api::UNIX_JACK:
-				u::log::print("  JACK\n"); break;
-			case RtAudio::Api::MACOSX_CORE:
-				u::log::print("  CoreAudio\n"); break;
-			case RtAudio::Api::WINDOWS_WASAPI:
-				u::log::print("  WASAPI\n"); break;
-			case RtAudio::Api::WINDOWS_ASIO:
-				u::log::print("  ASIO\n"); break;
-			case RtAudio::Api::WINDOWS_DS:
-				u::log::print("  DirectSound\n"); break;
-			case RtAudio::Api::RTAUDIO_DUMMY:
-				u::log::print("  Dummy\n"); break;
-			default:
-				u::log::print("  (unknown)\n"); break;
+	for (const RtAudio::Api& api_ : APIs)
+	{
+		switch (api_)
+		{
+		case RtAudio::Api::LINUX_ALSA:
+			u::log::print("  ALSA\n");
+			break;
+		case RtAudio::Api::LINUX_PULSE:
+			u::log::print("  PulseAudio\n");
+			break;
+		case RtAudio::Api::UNIX_JACK:
+			u::log::print("  JACK\n");
+			break;
+		case RtAudio::Api::MACOSX_CORE:
+			u::log::print("  CoreAudio\n");
+			break;
+		case RtAudio::Api::WINDOWS_WASAPI:
+			u::log::print("  WASAPI\n");
+			break;
+		case RtAudio::Api::WINDOWS_ASIO:
+			u::log::print("  ASIO\n");
+			break;
+		case RtAudio::Api::WINDOWS_DS:
+			u::log::print("  DirectSound\n");
+			break;
+		case RtAudio::Api::RTAUDIO_DUMMY:
+			u::log::print("  Dummy\n");
+			break;
+		default:
+			u::log::print("  (unknown)\n");
+			break;
 		}
 	}
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 #ifdef WITH_AUDIO_JACK
 
 JackState jackTransportQuery()
 {
-	if (api != G_SYS_API_JACK)
-		return jackState;
+	if (api_ != G_SYS_API_JACK)
+		return {};
 
 	jack_position_t        position;
 	jack_transport_state_t ts = jack_transport_query(jackGetHandle_(), &position);
 
 	return {
-		ts != JackTransportStopped,
-		position.beats_per_minute,
-		position.frame
-	};
+	    ts != JackTransportStopped,
+	    position.beats_per_minute,
+	    position.frame};
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void jackStart()
 {
-	if (api == G_SYS_API_JACK)
+	if (api_ == G_SYS_API_JACK)
 		jack_transport_start(jackGetHandle_());
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void jackSetPosition(uint32_t frame)
 {
-	if (api != G_SYS_API_JACK)
-    	return;
+	if (api_ != G_SYS_API_JACK)
+		return;
 	jack_position_t position;
 	jack_transport_query(jackGetHandle_(), &position);
 	position.frame = frame;
 	jack_transport_reposition(jackGetHandle_(), &position);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void jackSetBpm(double bpm)
 {
-	if (api != G_SYS_API_JACK)
+	if (api_ != G_SYS_API_JACK)
 		return;
 	jack_position_t position;
 	jack_transport_query(jackGetHandle_(), &position);
-	position.valid = jack_position_bits_t::JackPositionBBT;
-	position.bar  = 0;  // no such info from Giada
-	position.beat = 0;  // no such info from Giada
-	position.tick = 0;  // no such info from Giada
+	position.valid            = jack_position_bits_t::JackPositionBBT;
+	position.bar              = 0; // no such info from Giada
+	position.beat             = 0; // no such info from Giada
+	position.tick             = 0; // no such info from Giada
 	position.beats_per_minute = bpm;
 	jack_transport_reposition(jackGetHandle_(), &position);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void jackStop()
 {
-	if (api == G_SYS_API_JACK)
+	if (api_ == G_SYS_API_JACK)
 		jack_transport_stop(jackGetHandle_());
 }
 
-#endif  // WITH_AUDIO_JACK
-} // giada::m::kernelAudio
+#endif // WITH_AUDIO_JACK
+} // namespace giada::m::kernelAudio

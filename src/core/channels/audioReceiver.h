@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,52 +24,34 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CHANNEL_AUDIO_RECEIVER_H
 #define G_CHANNEL_AUDIO_RECEIVER_H
 
-
-#include <memory>
-
-
-namespace giada {
-namespace m
+namespace giada::m
 {
-namespace conf
-{
-struct Conf;
+class AudioBuffer;
 }
-namespace patch
+namespace giada::m::channel
 {
-struct Channel; 
+struct Data;
 }
-class  AudioBuffer;
-struct ChannelState;
-struct AudioReceiverState;
-
-/* AudioReceiver 
-Operates on input audio streams for audio recording and input monitor. */
-
-class AudioReceiver
+namespace giada::m::patch
 {
-public:
+struct Channel;
+}
+namespace giada::m::audioReceiver
+{
+struct Data
+{
+	Data() = default;
+	Data(const patch::Channel& p);
+	Data(const Data& o) = default;
 
-    AudioReceiver(ChannelState*, const conf::Conf&);
-    AudioReceiver(const patch::Channel&, ChannelState*);
-    AudioReceiver(const AudioReceiver&, ChannelState* c=nullptr);
-
-    void render(const AudioBuffer& in) const;
-
-    /* state
-    Pointer to mutable AudioReceiverState state. */
-
-    std::unique_ptr<AudioReceiverState> state;
-
-private:
-
-    ChannelState* m_channelState;
+	bool inputMonitor;
+	bool overdubProtection;
 };
-}} // giada::m::
 
+void render(const channel::Data& ch, const AudioBuffer& in);
+} // namespace giada::m::audioReceiver
 
 #endif

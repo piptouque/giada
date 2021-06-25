@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,96 +24,69 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_MIXER_H
 #define G_MIXER_H
 
-
-#include <atomic>
-#include <functional>
-#include <vector>
-#include "deps/rtaudio/RtAudio.h"
-#include "core/ringBuffer.h"
-#include "core/recorder.h"
-#include "core/types.h"
-#include "core/queue.h"
 #include "core/midiEvent.h"
+#include "core/queue.h"
+#include "core/recorder.h"
+#include "core/ringBuffer.h"
+#include "core/types.h"
+#include "deps/rtaudio/RtAudio.h"
+#include <functional>
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
 struct Action;
-class Channel;
 class AudioBuffer;
-
-namespace mixer
+} // namespace giada::m
+namespace giada::m::channel
 {
-enum class EventType 
+struct Data;
+}
+namespace giada::m::mixer
 {
-	KEY_PRESS, 
-	KEY_RELEASE, 
-	KEY_KILL,
-	SEQUENCER_FIRST_BEAT, // 3
-	SEQUENCER_BAR,        // 4
-	SEQUENCER_START,      // 5
-	SEQUENCER_STOP,       // 6
-	SEQUENCER_REWIND,     // 7
-	SEQUENCER_REWIND_REQ, // 8
-	MIDI, 
-	ACTION, 
-	CHANNEL_TOGGLE_READ_ACTIONS,
-	CHANNEL_KILL_READ_ACTIONS,
-	CHANNEL_TOGGLE_ARM,
-	CHANNEL_MUTE,
-	CHANNEL_SOLO,
-	CHANNEL_VOLUME,
-	CHANNEL_PITCH,
-	CHANNEL_PAN
-};
-
-struct Event
-{
-	EventType type;
-	Frame     delta;
-	Action    action;
-};
-
-/* EventBuffer
-Alias for a RingBuffer containing events to be sent to engine. The double size
-is due to the presence of two distinct Queues for collecting events coming from
-other threads. See below. */
-
-using EventBuffer = RingBuffer<Event, G_MAX_QUEUE_EVENTS * 2>;
-
 constexpr int MASTER_OUT_CHANNEL_ID = 1;
 constexpr int MASTER_IN_CHANNEL_ID  = 2;
 constexpr int PREVIEW_CHANNEL_ID    = 3;
 
-extern std::atomic<float> peakOut; // TODO - move to model::
-extern std::atomic<float> peakIn;  // TODO - move to model::
+/* RenderInfo
+Struct of parameters passed to Mixer for rendering. */
 
-/* Channel Event queues
-Collect events coming from the UI or MIDI devices to be sent to channels. Our 
-poor's man Queue is a single-producer/single-consumer one, so we need two queues 
-for two writers. TODO - let's add a multi-producer queue sooner or later! */
+struct RenderInfo
+{
+	bool  isAudioReady;
+	bool  hasInput;
+	bool  isClockActive;
+	bool  isClockRunning;
+	bool  canLineInRec;
+	bool  limitOutput;
+	bool  inToOut;
+	Frame maxFramesToRec;
+	float outVol;
+	float inVol;
+	float recTriggerLevel;
+};
 
-extern Queue<Event, G_MAX_QUEUE_EVENTS> UIevents;
-extern Queue<Event, G_MAX_QUEUE_EVENTS> MidiEvents;
+/* RecordInfo
+Information regarding the input recording progress. */
 
-void init(Frame framesInSeq, Frame framesInBuffer);
+struct RecordInfo
+{
+	Frame position;
+	Frame maxLength;
+};
+
+void init(Frame framesInLoop, Frame framesInBuffer);
 
 /* enable, disable
-Toggles master callback processing. Useful when loading a new patch. Mixer
-will flush itself to wait for a processing cycle to finish when disable() is
-called. */
+Toggles master callback processing. Useful to suspend the rendering. */
 
 void enable();
 void disable();
 
 /* allocRecBuffer
-Allocates new memory for the virtual input channel. Call this whenever you 
-shrink or resize the sequencer. */
+Allocates new memory for the virtual input channel. */
 
 void allocRecBuffer(Frame frames);
 
@@ -126,32 +99,42 @@ void clearRecBuffer();
 Returns a read-only reference to the internal virtual channel. Use this to
 merge data into channel after an input recording session. */
 
-const AudioBuffer& getRecBuffer(); 
+const AudioBuffer& getRecBuffer();
 
-void close();
+/* render
+Core rendering function. */
 
-/* masterPlay
-Core method (callback) */
-
-int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize, double streamTime,
-	RtAudioStreamStatus status, void* userData);
+int render(AudioBuffer& out, const AudioBuffer& in, const RenderInfo& info);
 
 /* startInputRec, stopInputRec
-Starts/stops input recording on frame clock::getCurrentFrame(). */
+Starts/stops input recording on frame 'from'. The latter returns the number of
+recorded frames. */
 
-void startInputRec();
-void stopInputRec();
+void  startInputRec(Frame from);
+Frame stopInputRec();
+
+/* setSignalCallback
+Registers the function to be called when the audio signal reaches a certain
+threshold (record-on-signal mode). */
 
 void setSignalCallback(std::function<void()> f);
 
-/* pumpEvent
-Pumps a new mixer::Event into the event vector. Use this function when you want
-to inject a new event for the **current** block. Push the event in the two 
-queues UIevents and MIDIevents above if the event can be processed in the next 
-block instead. */
+/* setEndOfRecCallback
+Registers the function to be called when the end of the internal recording 
+buffer has been reached. */
 
-void pumpEvent(Event e);
-}}} // giada::m::mixer::;
+void setEndOfRecCallback(std::function<void()> f);
 
+/* isChannelAudible
+True if the channel 'c' is currently audible: not muted or not included in a 
+solo session. */
+
+bool isChannelAudible(const channel::Data& c);
+
+float getPeakOut();
+float getPeakIn();
+
+RecordInfo getRecordInfo();
+} // namespace giada::m::mixer
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,15 +24,13 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_ENVELOPE_EDITOR_H
 #define GE_ENVELOPE_EDITOR_H
 
-
 #include "baseActionEditor.h"
 
-
-namespace giada {
+namespace giada
+{
 namespace m
 {
 class SampleChannel;
@@ -43,7 +41,6 @@ class geEnvelopePoint;
 class geEnvelopeEditor : public geBaseActionEditor
 {
 public:
-
 	geEnvelopeEditor(Pixel x, Pixel y, const char* l, gdBaseActionEditor*);
 	~geEnvelopeEditor();
 
@@ -51,21 +48,21 @@ public:
 
 	void rebuild(c::actionEditor::Data& d) override;
 
-private:
-
-	void onAddAction()     override;
-	void onDeleteAction()  override;
-	void onMoveAction()    override;
-	void onResizeAction()  override{}; // Nothing to do here
+  private:
+	void onAddAction() override;
+	void onDeleteAction() override;
+	void onMoveAction() override;
+	void onResizeAction() override{}; // Nothing to do here
 	void onRefreshAction() override;
 
 	Pixel frameToX(Frame frame) const;
 	Pixel valueToY(int value) const;
-	int   yToValue(Pixel pixel, Pixel offset=0) const;
+	int   yToValue(Pixel pixel, Pixel offset = 0) const;
 
 	bool isFirstPoint() const;
-	bool isLastPoint()  const;
+	bool isLastPoint() const;
 };
-}} // giada::v::
+} // namespace v
+} // namespace giada
 
 #endif

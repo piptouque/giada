@@ -9,7 +9,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -29,42 +29,38 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_LIQUID_SCROLL_H
 #define GE_LIQUID_SCROLL_H
 
-
+#include "core/const.h"
 #include "scroll.h"
-
 
 class geLiquidScroll : public geScroll
 {
 public:
-
 	geLiquidScroll(int x, int y, int w, int h);
 
 	void resize(int x, int y, int w, int h) override;
 
-    /* addWidget
+	/* addWidget
     Adds a new widget to the bottom, with proper spacing. */
-    
-    template<typename T>
-    T* addWidget(T* wg)
-    {
-        int numChildren = countChildren();
 
-        int wx = x();
-        int wy = y() - yposition() + (numChildren * (wg->h() + G_GUI_INNER_MARGIN));
-        int ww = w() - 24;
-        int wh = wg->h();
+	template <typename T>
+	T* addWidget(T* wg)
+	{
+		int numChildren = countChildren();
 
-        wg->resize(wx, wy, ww, wh);
-        add(wg);
-        redraw();    
+		int wx = x();
+		int wy = y() - yposition() + (numChildren * (wg->h() + G_GUI_INNER_MARGIN));
+		int ww = w() - 24;
+		int wh = wg->h();
 
-        return wg;
-    }   
+		wg->resize(wx, wy, ww, wh);
+		add(wg);
+		redraw();
+
+		return wg;
+	}
 };
-
 
 #endif

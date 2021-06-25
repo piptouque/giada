@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,34 +24,42 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_RANGE_H
 #define G_RANGE_H
 
-
 #include <cassert>
-
 
 namespace giada
 {
-template<typename T>
+template <typename T>
 class Range
 {
 public:
+	Range()
+	: m_a(0)
+	, m_b(0)
+	{
+	}
+	Range(T a, T b)
+	: m_a(a)
+	, m_b(b)
+	{
+		assert(a < b);
+	}
 
-	Range() : m_a(0), m_b(0) {}
-	Range(T a, T b) : m_a(a), m_b(b) { assert(a < b); }
-
-	T getBegin() const  { return m_a; }
-	T getEnd() const    { return m_b; }
+	T getBegin() const { return m_a; }
+	T getEnd() const { return m_b; }
 	T getLength() const { return m_b - m_a; }
 
-private:
+	bool contains(T t) const
+	{
+		return t >= m_a && t < m_b;
+	}
 
+  private:
 	T m_a;
 	T m_b;
 };
-} // giada::
-
+} // namespace giada
 
 #endif

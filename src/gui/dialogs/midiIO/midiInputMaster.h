@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,56 +24,48 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_MIDI_INPUT_MASTER_H
 #define GD_MIDI_INPUT_MASTER_H
-
 
 #include "glue/io.h"
 #include "gui/elems/midiIO/midiLearnerPack.h"
 #include "midiInputBase.h"
 
-
 class geCheck;
 
-
-namespace giada {
-namespace v 
+namespace giada
+{
+namespace v
 {
 class geChoice;
 class geMasterLearnerPack : public geMidiLearnerPack
 {
 public:
-
 	geMasterLearnerPack(int x, int y);
 
 	void update(const c::io::Master_InputData&);
 };
 
-
 /* -------------------------------------------------------------------------- */
-
 
 class gdMidiInputMaster : public gdMidiInputBase
 {
 public:
-
-    gdMidiInputMaster();
+	gdMidiInputMaster();
 
 	void rebuild() override;
 
-private:
-
+  private:
 	static void cb_enable(Fl_Widget* /*w*/, void* p);
 	static void cb_setChannel(Fl_Widget* /*w*/, void* p);
-	void cb_enable();
-	void cb_setChannel();
+	void        cb_enable();
+	void        cb_setChannel();
 
 	c::io::Master_InputData m_data;
 
 	geMasterLearnerPack* m_learners;
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif

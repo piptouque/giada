@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,22 +24,35 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include "../../../core/const.h"
-#include "boxtypes.h"
 #include "input.h"
+#include "boxtypes.h"
+#include "core/const.h"
 
-
-geInput::geInput(int x, int y, int w, int h, const char *l)
-  : Fl_Input(x, y, w, h, l)
+geInput::geInput(int x, int y, int w, int h, const char* l)
+: Fl_Input(x, y, w, h, l)
 {
-  //Fl::set_boxtype(G_CUSTOM_BORDER_BOX, gDrawBox, 1, 1, 2, 2);
-  box(G_CUSTOM_BORDER_BOX);
-  labelsize(G_GUI_FONT_SIZE_BASE);
-  labelcolor(G_COLOR_LIGHT_2);
-  color(G_COLOR_BLACK);
-  textcolor(G_COLOR_LIGHT_2);
-  cursor_color(G_COLOR_LIGHT_2);
-  selection_color(G_COLOR_GREY_4);
-  textsize(G_GUI_FONT_SIZE_BASE);
+	//Fl::set_boxtype(G_CUSTOM_BORDER_BOX, gDrawBox, 1, 1, 2, 2);
+	box(G_CUSTOM_BORDER_BOX);
+	labelsize(G_GUI_FONT_SIZE_BASE);
+	labelcolor(G_COLOR_LIGHT_2);
+	color(G_COLOR_BLACK);
+	textcolor(G_COLOR_LIGHT_2);
+	cursor_color(G_COLOR_LIGHT_2);
+	selection_color(G_COLOR_GREY_4);
+	textsize(G_GUI_FONT_SIZE_BASE);
+
+	when(FL_WHEN_CHANGED);
+	callback(cb_onChange, this);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void geInput::cb_onChange(Fl_Widget* /*w*/, void* p) { (static_cast<geInput*>(p))->cb_onChange(); }
+
+/* -------------------------------------------------------------------------- */
+
+void geInput::cb_onChange()
+{
+	if (onChange != nullptr)
+		onChange(value());
 }

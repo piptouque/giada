@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,45 +24,43 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_SHIFT_TOOL_H
 #define GE_SHIFT_TOOL_H
 
-
-#include "gui/elems/basics/pack.h"
+#include "core/types.h"
 #include "gui/elems/basics/box.h"
-#include "gui/elems/basics/input.h"
 #include "gui/elems/basics/button.h"
+#include "gui/elems/basics/input.h"
+#include "gui/elems/basics/pack.h"
 
-
-namespace giada {
-namespace v 
+namespace giada::c::sampleEditor
+{
+struct Data;
+}
+namespace giada::v
 {
 class geShiftTool : public gePack
 {
 public:
-
 	geShiftTool(const c::sampleEditor::Data& d, int x, int y);
 
 	void rebuild(const c::sampleEditor::Data& d);
 	void update(Frame shift);
 
-private:
-
+  private:
 	static void cb_setShift(Fl_Widget* /*w*/, void* p);
 	static void cb_reset(Fl_Widget* /*w*/, void* p);
-	void cb_setShift();
-	void cb_reset();
+	void        cb_setShift();
+	void        cb_reset();
 
 	void shift(int f);
 
 	const c::sampleEditor::Data* m_data;
-	
+
 	geBox    m_label;
 	geInput  m_shift;
 	geButton m_reset;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

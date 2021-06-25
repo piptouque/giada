@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,42 +24,32 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_ABOUT_H
 #define GD_ABOUT_H
 
+#include "gui/dialogs/window.h"
+#include "gui/elems/basics/box.h"
+#include "gui/elems/basics/button.h"
 
-#include "window.h"
-
-
-class geBox;
-class geButton;
-
-
-namespace giada {
-namespace v 
+namespace giada::v
 {
 class gdAbout : public gdWindow
 {
 public:
+	gdAbout();
 
-    gdAbout();
-
-    static void cb_close(Fl_Widget* /*w*/, void* p);
-    inline void cb_close();
+	static void cb_close(Fl_Widget* /*w*/, void* p);
+	inline void cb_close();
 
 private:
-
-	geBox*    logo;
-	geBox*    text;
-	geButton* close;
-
+	geBox    logo;
+	geBox    text;
+	geButton close;
 #ifdef WITH_VST
-	geBox* vstText;
-	geBox* vstLogo;
+	geBox vstText;
+	geBox vstLogo;
 #endif
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

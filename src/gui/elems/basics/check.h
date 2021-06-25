@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,26 +24,26 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_CHECK_H
 #define GE_CHECK_H
 
-
 #include <FL/Fl_Check_Button.H>
-
+#include <functional>
 
 class geCheck : public Fl_Check_Button
 {
 public:
-
-	geCheck(int x, int y, int w, int h, const char *l=0);
+	geCheck(int x, int y, int w, int h, const char* l = 0);
 
 	void draw() override;
 
+	std::function<void(bool)> onChange = nullptr;
+
 private:
+	static void cb_onChange(Fl_Widget* w, void* p);
+	void        cb_onChange();
 
 	bool hasMultilineText() const;
 };
-
 
 #endif

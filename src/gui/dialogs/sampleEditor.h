@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,15 +24,12 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_EDITOR_H
 #define GD_EDITOR_H
-
 
 #include "core/types.h"
 #include "glue/sampleEditor.h"
 #include "window.h"
-
 
 class geButton;
 class geCheck;
@@ -40,13 +37,11 @@ class geBox;
 class geButton;
 class geStatusButton;
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
 class Wave;
 }
-namespace v 
+namespace giada::v
 {
 class geChoice;
 class gePack;
@@ -60,10 +55,9 @@ class geRangeTool;
 class geShiftTool;
 class gdSampleEditor : public gdWindow
 {
-friend class geWaveform;
+	friend class geWaveform;
 
 public:
-
 	gdSampleEditor(ID channelId);
 	~gdSampleEditor();
 
@@ -75,7 +69,7 @@ public:
 	geBox*    sep1;
 	geButton* zoomIn;
 	geButton* zoomOut;
-	
+
 	geWaveTools* waveTools;
 
 	geVolumeTool* volumeTool;
@@ -92,28 +86,26 @@ public:
 	geCheck*        loop;
 	geBox*          info;
 
-
-private:
-
-	gePack* createUpperBar();
-	gePack* createBottomBar(int x, int y, int h);
+  private:
+	gePack*  createUpperBar();
+	gePack*  createBottomBar(int x, int y, int h);
 	geGroup* createPreviewBox(int x, int y, int h);
-	gePack* createOpTools(int x, int y);
+	gePack*  createOpTools(int x, int y);
 
-	static void cb_reload    (Fl_Widget* /*w*/, void* p);
-	static void cb_zoomIn    (Fl_Widget* /*w*/, void* p);
-	static void cb_zoomOut   (Fl_Widget* /*w*/, void* p);
+	static void cb_reload(Fl_Widget* /*w*/, void* p);
+	static void cb_zoomIn(Fl_Widget* /*w*/, void* p);
+	static void cb_zoomOut(Fl_Widget* /*w*/, void* p);
 	static void cb_changeGrid(Fl_Widget* /*w*/, void* p);
 	static void cb_enableSnap(Fl_Widget* /*w*/, void* p);
 	static void cb_togglePreview(Fl_Widget* /*w*/, void* p);
 	static void cb_rewindPreview(Fl_Widget* /*w*/, void* p);
-	void cb_reload();
-	void cb_zoomIn();
-	void cb_zoomOut();
-	void cb_changeGrid();
-	void cb_enableSnap();
-	void cb_togglePreview();
-	void cb_rewindPreview();
+	void        cb_reload();
+	void        cb_zoomIn();
+	void        cb_zoomOut();
+	void        cb_changeGrid();
+	void        cb_enableSnap();
+	void        cb_togglePreview();
+	void        cb_rewindPreview();
 
 	void updateInfo();
 
@@ -121,7 +113,6 @@ private:
 
 	c::sampleEditor::Data m_data;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,30 +24,26 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_MIDI_CHANNEL_BUTTON_H
 #define GE_MIDI_CHANNEL_BUTTON_H
 
-
 #include "channelButton.h"
 
-
-namespace giada {
+namespace giada
+{
 namespace v
 {
 class geMidiChannelButton : public geChannelButton
 {
 public:
-
 	geMidiChannelButton(int x, int y, int w, int h, const c::channel::Data& d);
-	
+
 	void refresh() override;
 
-private:
-
+  private:
 	void refreshLabel();
 };
-}} // giada::v::
-
+} // namespace v
+} // namespace giada
 
 #endif

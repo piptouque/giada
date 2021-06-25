@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,32 +24,27 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_MAINWINDOW_H
 #define GD_MAINWINDOW_H
 
-
 #include "window.h"
 
-
-namespace giada {
-namespace v 
+namespace giada::v
 {
 class geKeyboard;
 class geMainIO;
 class geMainMenu;
-class geBeatMeter;
+class geSequencer;
 class geMainTransport;
 class geMainTimer;
 class gdMainWindow : public gdWindow
 {
 public:
-
-    gdMainWindow(int w, int h, const char* title, int argc, char** argv);
+	gdMainWindow(int w, int h, const char* title, int argc, char** argv);
 	~gdMainWindow();
 
 	void refresh() override;
-    void rebuild() override;
+	void rebuild() override;
 
 	/* clearKeyboard
 	Resets Keyboard to initial state, with no columns. */
@@ -57,13 +52,12 @@ public:
 	void clearKeyboard();
 
 	geKeyboard*      keyboard;
-	geBeatMeter*     beatMeter;
+	geSequencer*     sequencer;
 	geMainMenu*      mainMenu;
 	geMainIO*        mainIO;
 	geMainTimer*     mainTimer;
 	geMainTransport* mainTransport;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,17 +26,12 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_UTILS_FS_H
 #define G_UTILS_FS_H
 
-
 #include <string>
 
-
-namespace giada {
-namespace u {
-namespace fs 
+namespace giada::u::fs
 {
 bool fileExists(const std::string& s);
 bool dirExists(const std::string& s);
@@ -47,8 +42,8 @@ Tells whether 's' is '/' on Unix or '[X]:\' on Windows. */
 
 bool isRootDir(const std::string& s);
 
-bool isProject(const std::string& s);
-bool mkdir(const std::string& s);
+bool        isProject(const std::string& s);
+bool        mkdir(const std::string& s);
 std::string getCurrentPath();
 std::string getHomePath();
 
@@ -85,7 +80,6 @@ Returns the upper directory:
 /path/to/my/directory -> /path/to/my/ */
 
 std::string getUpDir(const std::string& s);
-}}}  // giada::u::fs::
-
+} // namespace giada::u::fs
 
 #endif

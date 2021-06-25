@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,33 +24,30 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_CHANNEL_NAME_INPUT_H
 #define GD_CHANNEL_NAME_INPUT_H
 
-
 #include "window.h"
-
 
 class geInput;
 class geButton;
 
-
-namespace giada {
-namespace v 
+namespace giada::c::channel
+{
+struct Data;
+}
+namespace giada::v
 {
 class gdChannelNameInput : public gdWindow
 {
 public:
-
 	gdChannelNameInput(const c::channel::Data& d);
 
-private:
-
+  private:
 	static void cb_update(Fl_Widget* /*w*/, void* p);
 	static void cb_cancel(Fl_Widget* /*w*/, void* p);
-	void cb_update();
-	void cb_cancel();
+	void        cb_update();
+	void        cb_cancel();
 
 	const c::channel::Data& m_data;
 
@@ -58,7 +55,6 @@ private:
 	geButton* m_ok;
 	geButton* m_cancel;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

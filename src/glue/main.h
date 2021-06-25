@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,61 +24,71 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_MAIN_H
 #define G_MAIN_H
 
-
 #include "core/types.h"
 
-
-namespace giada {
-namespace m 
+namespace giada::m::channel
 {
-class Channel;
-namespace model
-{ 
+struct Data;
+}
+namespace giada::m::model
+{
+struct Clock;
 struct Clock;
 struct Mixer;
-}}
-namespace c {
-namespace main
+struct Mixer;
+} // namespace giada::m::model
+namespace giada::c::main
 {
 struct Timer
 {
-    Timer() = default;
-    Timer(const m::model::Clock& c);
+	Timer() = default;
+	Timer(const m::model::Clock& c);
 
-    float bpm;
-    int   beats;
-    int   bars;
-    int   quantize;
-    bool  isUsingJack;
-    bool  isRecordingInput;
+	float bpm;
+	int   beats;
+	int   bars;
+	int   quantize;
+	bool  isUsingJack;
+	bool  isRecordingInput;
 };
 
 struct IO
 {
-    IO() = default;
-    IO(const m::Channel& out, const m::Channel& in, const m::model::Mixer& m);
+	IO() = default;
+	IO(const m::channel::Data& out, const m::channel::Data& in, const m::model::Mixer& m);
 
-    float masterOutVol;
-    float masterInVol;
+	float masterOutVol;
+	float masterInVol;
 #ifdef WITH_VST
-    bool  masterOutHasPlugins;
-    bool  masterInHasPlugins;
+	bool masterOutHasPlugins;
+	bool masterInHasPlugins;
 #endif
-    bool  inToOut;
+	bool inToOut;
 
-    float a_getMasterOutPeak();
-    float a_getMasterInPeak();
+	float getMasterOutPeak();
+	float getMasterInPeak();
+};
+
+struct Sequencer
+{
+	bool  isFreeModeInputRec;
+	bool  shouldBlink;
+	int   beats;
+	int   bars;
+	int   currentBeat;
+	Frame recPosition;
+	Frame recMaxLength;
 };
 
 /* get*
 Returns viewModel objects filled with data. */
 
-Timer getTimer();
-IO getIO();
+Timer     getTimer();
+IO        getIO();
+Sequencer getSequencer();
 
 /* setBpm (1)
 Sets bpm value from string to float. */
@@ -101,11 +111,12 @@ Enables the "hear what you playing" feature. */
 void setInToOut(bool v);
 
 void toggleRecOnSignal();
+void toggleFreeInputRec();
 
 /* closeProject
 Resets Giada to init state. If resetGui also refresh all widgets. */
 
 void closeProject();
-}}} // giada::c::main::
+} // namespace giada::c::main
 
 #endif

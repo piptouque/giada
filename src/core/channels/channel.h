@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,108 +24,124 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CHANNEL_H
 #define G_CHANNEL_H
 
-
 #include <optional>
-#include "core/const.h"
-#include "core/mixer.h"
-#include "core/channels/state.h"
-#include "core/channels/samplePlayer.h"
+#ifdef WITH_VST
+#include "deps/juce-config.h"
+#endif
+#include "core/audioBuffer.h"
 #include "core/channels/audioReceiver.h"
+#include "core/channels/samplePlayer.h"
+#include "core/const.h"
+#include "core/eventDispatcher.h"
+#include "core/mixer.h"
+#include "core/sequencer.h"
 #ifdef WITH_VST
 #include "core/channels/midiReceiver.h"
 #endif
-#include "core/channels/midiLearner.h"
-#include "core/channels/midiSender.h"
-#include "core/channels/midiController.h"
-#include "core/channels/midiLighter.h"
-#include "core/channels/sampleActionRecorder.h"
 #include "core/channels/midiActionRecorder.h"
+#include "core/channels/midiController.h"
+#include "core/channels/midiLearner.h"
+#include "core/channels/midiLighter.h"
+#include "core/channels/midiSender.h"
+#include "core/channels/sampleActionRecorder.h"
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
-namespace conf
-{
-struct Conf;
+class Plugin;
 }
-class Channel final
+namespace giada::m::channel
 {
-public:
-
-    Channel(ChannelType t, ID id, ID columnId, Frame bufferSize, const conf::Conf& c);
-    Channel(const Channel&);
-    Channel(const patch::Channel& p, Frame bufferSize);
-    Channel(Channel&&)                 = default;
-    Channel& operator=(const Channel&) = delete;
-    Channel& operator=(Channel&&)      = delete;
-    ~Channel()                         = default;
-
-    /* parse
-    Parses live events. */
-
-    void parse(const mixer::EventBuffer& e, bool audible) const;
-
-    /* advance
-    Processes static events (e.g. actions) in the current block. */
-
-    void advance(Frame bufferSize) const;
-
-    /* render
-    Renders audio data to I/O buffers. */
-     
-    void render(AudioBuffer* out, AudioBuffer* in, bool audible) const;
-
-    bool isInternal() const;
-    bool isMuted() const;
-    bool canInputRec() const;
-    bool canActionRec() const;
-    bool hasWave() const;
-    ID getColumnId() const;
-    ChannelType getType() const;
-    
-    ID id;
-
-#ifdef WITH_VST
-    std::vector<ID> pluginIds;
-#endif
-
-    /* state
-    Pointer to mutable Channel state. */
-
-    std::unique_ptr<ChannelState> state;
-
-    MidiLearner midiLearner;
-    MidiLighter midiLighter;
-
-    std::optional<SamplePlayer>         samplePlayer;
-    std::optional<AudioReceiver>        audioReceiver;
-    std::optional<MidiController>       midiController;
-#ifdef WITH_VST
-    std::optional<MidiReceiver>         midiReceiver;
-#endif
-    std::optional<MidiSender>           midiSender;
-    std::optional<SampleActionRecorder> sampleActionRecorder;
-    std::optional<MidiActionRecorder>   midiActionRecorder;
-
-private:
-
-    void parse(const mixer::Event& e) const;
-
-    void renderMasterOut(AudioBuffer& out) const;
-    void renderMasterIn(AudioBuffer& in) const;
-    void renderChannel(AudioBuffer& out, AudioBuffer& in, bool audible) const;
-
-    AudioBuffer::Pan calcPanning() const;
-
-    ChannelType m_type;
-    ID m_columnId;
+struct State
+{
+	WeakAtomic<Frame>         tracker    = 0;
+	WeakAtomic<ChannelStatus> playStatus = ChannelStatus::OFF;
+	WeakAtomic<ChannelStatus> recStatus  = ChannelStatus::OFF;
+	bool                      rewinding;
+	Frame                     offset;
 };
-}} // giada::m::
 
+struct Buffer
+{
+	Buffer(Frame bufferSize);
+
+	AudioBuffer audio;
+#ifdef WITH_VST
+	juce::MidiBuffer midi;
+#endif
+};
+
+struct Data
+{
+	Data(ChannelType t, ID id, ID columnId, State& state, Buffer& buffer);
+	Data(const patch::Channel& p, State& state, Buffer& buffer, float samplerateRatio);
+	Data(const Data& o) = default;
+	Data(Data&& o)      = default;
+	Data& operator=(const Data&) = default;
+	Data& operator=(Data&&) = default;
+
+	bool operator==(const Data&);
+
+	bool isPlaying() const;
+	bool isInternal() const;
+	bool isMuted() const;
+	bool canInputRec() const;
+	bool canActionRec() const;
+	bool hasWave() const;
+
+	State*      state;
+	Buffer*     buffer;
+	ID          id;
+	ChannelType type;
+	ID          columnId;
+	float       volume;
+	float       volume_i; // Internal volume used for velocity-drives-volume mode on Sample Channels
+	float       pan;
+	bool        mute;
+	bool        solo;
+	bool        armed;
+	int         key;
+	bool        readActions;
+	bool        hasActions;
+	std::string name;
+	Pixel       height;
+#ifdef WITH_VST
+	std::vector<Plugin*> plugins;
+#endif
+
+	midiLearner::Data midiLearner;
+	midiLighter::Data midiLighter;
+
+	std::optional<samplePlayer::Data>   samplePlayer;
+	std::optional<sampleReactor::Data>  sampleReactor;
+	std::optional<audioReceiver::Data>  audioReceiver;
+	std::optional<midiController::Data> midiController;
+#ifdef WITH_VST
+	std::optional<midiReceiver::Data> midiReceiver;
+#endif
+	std::optional<midiSender::Data>           midiSender;
+	std::optional<sampleActionRecorder::Data> sampleActionRecorder;
+	std::optional<midiActionRecorder::Data>   midiActionRecorder;
+};
+
+/* advance
+Advances internal state by processing static events (e.g. pre-recorded 
+actions or sequencer events) in the current block. */
+
+void advance(const Data& d, const sequencer::EventBuffer& e);
+
+/* react
+Reacts to live events coming from the EventDispatcher (human events) and
+updates itself accordingly. */
+
+void react(Data& d, const eventDispatcher::EventBuffer& e, bool audible);
+
+/* render
+Renders audio data to I/O buffers. */
+
+void render(const Data& d, AudioBuffer* out, AudioBuffer* in, bool audible);
+} // namespace giada::m::channel
 
 #endif

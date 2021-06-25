@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,25 +24,20 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_QUANTIZER_H
 #define G_QUANTIZER_H
 
-
-#include <array>
-#include <functional>
 #include "core/const.h"
 #include "core/range.h"
 #include "core/types.h"
+#include <functional>
+#include <map>
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
 class Quantizer
 {
 public:
-
 	/* schedule
 	Schedules a function in slot 'id' to be called at the right time. The 
 	function has a 'delta' parameter for the buffer offset. */
@@ -67,17 +62,15 @@ public:
 
 	void clear();
 
-	/* isTriggered
+	/* hasBeenTriggered
 	True if a quantizer function has been triggered(). */
-	
-	bool isTriggered() const;
 
-private:
+	bool hasBeenTriggered() const;
 
-	std::array<std::function<void(Frame)>, G_MAX_QUANTIZER_SIZE> m_callbacks;
-	int m_performId = -1;
+  private:
+	std::map<int, std::function<void(Frame)>> m_callbacks;
+	int                                       m_performId = -1;
 };
-}} // giada::m::
-
+} // namespace giada::m
 
 #endif

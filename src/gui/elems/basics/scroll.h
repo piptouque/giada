@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -27,22 +27,17 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_SCROLL_H
 #define GE_SCROLL_H
 
-
 #include <FL/Fl_Scroll.H>
-
 
 class geScroll : public Fl_Scroll
 {
 public:
+	geScroll(int x, int y, int w, int h, int type = Fl_Scroll::BOTH);
 
-	geScroll(int x, int y, int w, int h, int type=Fl_Scroll::BOTH);
-
-    int countChildren() const;
+	int countChildren() const;
 };
-
 
 #endif

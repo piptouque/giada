@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,13 +24,10 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CLOCK_H
 #define G_CLOCK_H
 
-
 #include "types.h"
-
 
 namespace giada::m::clock
 {
@@ -43,35 +40,43 @@ void recomputeFrames();
 
 /* sendMIDIsync
 Generates MIDI sync output data. */
-
+/*TODO - move this to giada::m::sync*/
 void sendMIDIsync();
 
 /* sendMIDIrewind
 Rewinds timecode to beat 0 and also send a MTC full frame to cue the slave. */
-
+/*TODO - move this to giada::m::sync*/
 void sendMIDIrewind();
 
 #if defined(G_OS_LINUX) || defined(G_OS_FREEBSD) || defined(G_OS_MAC)
+/*TODO - move this to giada::m::sync*/
 void recvJackSync();
 #endif
 
-float getBpm();
-int getBeats();
-int getBars();
-int getCurrentBeat();
-int getCurrentFrame();
-int getFramesInBar();
-int getFramesInBeat();
-int getFramesInLoop();
-int getFramesInSeq();
-int getQuantizerValue();
-int getQuantizerStep();
+float       getBpm();
+int         getBeats();
+int         getBars();
+int         getCurrentBeat();
+int         getCurrentFrame();
+float       getCurrentSecond();
+int         getFramesInBar();
+int         getFramesInBeat();
+int         getFramesInLoop();
+int         getFramesInSeq();
+int         getQuantizerValue();
+int         getQuantizerStep();
 ClockStatus getStatus();
 
-/* incrCurrentFrame
-Increases current frame by a single step (+1). */
+/* getMaxFramesInLoop
+Returns how many frames the current loop length might contain at the slowest
+speed possible (G_MIN_BPM). Call this whenever you change the number or beats. */
 
-void incrCurrentFrame();
+Frame getMaxFramesInLoop();
+
+/* advance
+Increases current frame by a specific amount. */
+
+void advance(Frame amount);
 
 /* quantoHasPassed
 Tells whether a quantizer unit has passed yet. */
@@ -109,7 +114,12 @@ bool isOnFirstBeat();
 
 void rewind();
 void setStatus(ClockStatus s);
-} // giada::m::clock::
 
+/* calcBpmFromRec
+Given the amount of recorded frames, returns the speed of the current 
+performance. Used while input recording in FREE mode. */
+
+float calcBpmFromRec(Frame recordedFrames);
+} // namespace giada::m::clock
 
 #endif

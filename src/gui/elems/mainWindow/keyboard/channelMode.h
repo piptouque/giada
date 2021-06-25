@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,33 +26,30 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_CHANNEL_MODE_H
 #define GE_CHANNEL_MODE_H
 
-
 #include <FL/Fl_Menu_Button.H>
 
-
-namespace giada {
-namespace v
+namespace giada::c::channel
+{
+struct Data;
+}
+namespace giada::v
 {
 class geChannelMode : public Fl_Menu_Button
 {
 public:
-
 	geChannelMode(int x, int y, int w, int h, c::channel::Data& d);
 
 	void draw() override;
 
-private:
+  private:
+	static void cb_changeMode(Fl_Widget* /*w*/, void* p);
+	void        cb_changeMode(int mode);
 
-    static void cb_changeMode(Fl_Widget* /*w*/, void* p);
-    void cb_changeMode(int mode);
-
-    c::channel::Data& m_channel;
+	c::channel::Data& m_channel;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

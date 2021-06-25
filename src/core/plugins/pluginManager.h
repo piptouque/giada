@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,30 +24,27 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
 
 #ifndef G_PLUGIN_MANAGER_H
 #define G_PLUGIN_MANAGER_H
 
-
 #include "deps/juce-config.h"
 #include "plugin.h"
 
-
-namespace giada {
-namespace m
-{
-namespace patch
+namespace giada::m::patch
 {
 struct Plugin;
 struct Version;
-}
-namespace pluginManager
+} // namespace giada::m::patch
+namespace giada::m::pluginManager
 {
 enum class SortMethod : int
 {
-	NAME = 0, CATEGORY,	MANUFACTURER, FORMAT
+	NAME = 0,
+	CATEGORY,
+	MANUFACTURER,
+	FORMAT
 };
 
 struct PluginInfo
@@ -57,7 +54,7 @@ struct PluginInfo
 	std::string category;
 	std::string manufacturerName;
 	std::string format;
-	bool isInstrument;
+	bool        isInstrument;
 };
 
 void init(int samplerate, int buffersize);
@@ -85,7 +82,7 @@ Returns how many plug-ins are in a unknown/not-found state. */
 
 int countUnknownPlugins();
 
-std::unique_ptr<Plugin> makePlugin(const std::string& pid, ID id=0);
+std::unique_ptr<Plugin> makePlugin(const std::string& pid, ID id = 0);
 std::unique_ptr<Plugin> makePlugin(int index);
 std::unique_ptr<Plugin> makePlugin(const Plugin& other);
 
@@ -94,6 +91,7 @@ Transforms patch data into a Plugin object and vice versa. */
 
 const patch::Plugin     serializePlugin(const Plugin& p);
 std::unique_ptr<Plugin> deserializePlugin(const patch::Plugin& p, patch::Version version);
+std::vector<Plugin*>    hydratePlugins(std::vector<ID> pluginIds);
 
 /* getAvailablePluginInfo
 Returns the available plugin information (name, type, ...) given a plug-in
@@ -109,8 +107,7 @@ bool hasMissingPlugins();
 
 void sortPlugins(SortMethod sortMethod);
 
-}}} // giada::m::pluginManager::
-
+} // namespace giada::m::pluginManager
 
 #endif
 

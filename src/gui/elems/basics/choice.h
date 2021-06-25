@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,44 +24,39 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_CHOICE_H
 #define GE_CHOICE_H
 
-
+#include "core/types.h"
+#include <FL/Fl_Choice.H>
 #include <functional>
 #include <string>
 #include <vector>
-#include <FL/Fl_Choice.H>
-#include "core/types.h"
 
-
-namespace giada {
-namespace v 
+namespace giada::v
 {
 class geChoice : public Fl_Choice
 {
 public:
-
-	geChoice(int x, int y, int w, int h, const char* l=0, bool angle=true);
+	geChoice(int x, int y, int w, int h, const char* l = 0, bool angle = true);
 	void draw() override;
 
 	ID getSelectedId() const;
 
 	void addItem(const std::string& label, ID id);
-	void showItem(const char* c);
+	void showItem(const std::string& label);
 	void showItem(ID id);
+	void clear();
 
 	std::function<void(ID)> onChange = nullptr;
 
 private:
+	static void cb_onChange(Fl_Widget* w, void* p);
+	void        cb_onChange();
 
-	static void cb_onChange(Fl_Widget* /*w*/, void* p);
-	void cb_onChange();
-
-	bool angle;
-	std::vector<ID> ids;
+	bool            m_angle;
+	std::vector<ID> m_ids;
 };
-}}
+} // namespace giada::v
 
 #endif

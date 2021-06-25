@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,32 +24,17 @@
  *
  * -------------------------------------------------------------------------- */
 
+#ifndef G_V_DRAWING_H
+#define G_V_DRAWING_H
 
-#ifndef GD_DEV_INFO_H
-#define GD_DEV_INFO_H
+#include "deps/geompp/src/rect.hpp"
+#include <FL/fl_draw.H>
 
-
-#include "window.h"
-
-
-class geBox;
-class geButton;
-
-
-namespace giada {
-namespace v 
+namespace giada::v
 {
-class gdDevInfo : public gdWindow
-{
-public:
-
-    gdDevInfo(unsigned dev);
-
-private:
-
-	geBox*    text;
-	geButton* close;
-};
-}} // giada::v::
+void drawRectf(geompp::Rect<int> r, Fl_Color c);
+void drawRect(geompp::Rect<int> r, Fl_Color c);
+void drawLine(geompp::Line<int> l, Fl_Color c);
+} // namespace giada::v
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,83 +24,97 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include "core/graphics.h"
-#include "core/conf.h"
+#include "mainTransport.h"
 #include "core/clock.h"
-#include "core/sequencer.h"
+#include "core/conf.h"
+#include "core/const.h"
+#include "core/graphics.h"
 #include "core/mixer.h"
 #include "core/mixerHandler.h"
 #include "core/recManager.h"
-#include "core/conf.h"
-#include "core/const.h"
-#include "glue/main.h"
+#include "core/sequencer.h"
 #include "glue/events.h"
-#include "gui/elems/basics/button.h"
+#include "glue/main.h"
 #include "gui/elems/basics/box.h"
+#include "gui/elems/basics/button.h"
 #include "gui/elems/basics/statusButton.h"
-#include "mainTransport.h"
 
-
-namespace giada {
-namespace v
+namespace giada::v
 {
 geMainTransport::geMainTransport(int x, int y)
 : gePack(x, y, Direction::HORIZONTAL)
+, m_rewind(0, 0, 25, 25, "", rewindOff_xpm, rewindOn_xpm)
+, m_play(0, 0, 25, 25, play_xpm, pause_xpm)
+, m_spacer1(0, 0, 10, 25)
+, m_recTriggerMode(0, 0, 15, 25, recTriggerModeOff_xpm, recTriggerModeOn_xpm)
+, m_recAction(0, 0, 25, 25, recOff_xpm, recOn_xpm)
+, m_recInput(0, 0, 25, 25, inputRecOff_xpm, inputRecOn_xpm)
+, m_inputRecMode(0, 0, 15, 25, freeInputRecOff_xpm, freeInputRecOn_xpm)
+, m_spacer2(0, 0, 10, 25)
+, m_metronome(0, 0, 15, 25, metronomeOff_xpm, metronomeOn_xpm)
 {
-	rewind         = new geButton      (0, 0, 25, 25, "", rewindOff_xpm, rewindOn_xpm);
-	play           = new geStatusButton(0, 0, 25, 25, play_xpm, pause_xpm);
-	spacer1        = new geBox         (0, 0, 10, 25);
-	recTriggerMode = new geStatusButton(0, 0, 15, 25, recTriggerModeOff_xpm, recTriggerModeOn_xpm);
-	recAction      = new geStatusButton(0, 0, 25, 25, recOff_xpm, recOn_xpm);
-	recInput       = new geStatusButton(0, 0, 25, 25, inputRecOff_xpm, inputRecOn_xpm);
-	spacer2        = new geBox         (0, 0, 10, 25);
-	metronome      = new geStatusButton(0, 0, 15, 25, metronomeOff_xpm, metronomeOn_xpm);
-	add(rewind);
-	add(play);
-	add(spacer1);
-	add(recTriggerMode);
-	add(recAction);
-	add(recInput);
-	add(spacer2);
-	add(metronome);
-	
-	rewind->callback([](Fl_Widget* /*w*/, void* /*v*/) { 
+	add(&m_rewind);
+	add(&m_play);
+	add(&m_spacer1);
+	add(&m_recTriggerMode);
+	add(&m_recAction);
+	add(&m_recInput);
+	add(&m_inputRecMode);
+	add(&m_spacer2);
+	add(&m_metronome);
+
+	m_rewind.copy_tooltip("Rewind");
+	m_play.copy_tooltip("Play/Stop");
+	m_recTriggerMode.copy_tooltip("Record-on-signal mode\n\nIf enabled, action "
+	                              "and audio recording will start only when a signal (key press or audio) "
+	                              "is detected.");
+	m_recAction.copy_tooltip("Record actions");
+	m_recInput.copy_tooltip("Record audio");
+	m_inputRecMode.copy_tooltip("Free loop-length mode\n\nIf enabled, the sequencer "
+	                            "will adjust to the length of your first audio recording. "
+	                            "Available only if there are no other audio samples in the "
+	                            "project.");
+	m_metronome.copy_tooltip("Metronome");
+
+	m_rewind.callback([](Fl_Widget* /*w*/, void* /*v*/) {
 		c::events::rewindSequencer(Thread::MAIN);
 	});
 
-	play->callback([](Fl_Widget* /*w*/, void* /*v*/) { 
+	m_play.callback([](Fl_Widget* /*w*/, void* /*v*/) {
 		c::events::toggleSequencer(Thread::MAIN);
 	});
 
-	recAction->callback([](Fl_Widget* /*w*/, void* /*v*/) { 
+	m_recAction.callback([](Fl_Widget* /*w*/, void* /*v*/) {
 		c::events::toggleActionRecording();
 	});
 
-	recInput->callback([](Fl_Widget* /*w*/, void* /*v*/) { 
+	m_recInput.callback([](Fl_Widget* /*w*/, void* /*v*/) {
 		c::events::toggleInputRecording();
 	});
 
-	recTriggerMode->callback([](Fl_Widget* /*w*/, void* /*v*/) { 
+	m_recTriggerMode.callback([](Fl_Widget* /*w*/, void* /*v*/) {
 		c::main::toggleRecOnSignal();
 	});
 
-	metronome->type(FL_TOGGLE_BUTTON);
-	metronome->callback([](Fl_Widget* /*w*/, void* /*v*/) {
+	m_inputRecMode.callback([](Fl_Widget* /*w*/, void* /*v*/) {
+		c::main::toggleFreeInputRec();
+	});
+
+	m_metronome.type(FL_TOGGLE_BUTTON);
+	m_metronome.callback([](Fl_Widget* /*w*/, void* /*v*/) {
 		c::events::toggleMetronome();
 	});
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void geMainTransport::refresh()
 {
-	play->setStatus(m::clock::isRunning());
-	recAction->setStatus(m::recManager::isRecordingAction());
-	recInput->setStatus(m::recManager::isRecordingInput());
-	metronome->setStatus(m::sequencer::isMetronomeOn());
-	recTriggerMode->setStatus(m::conf::conf.recTriggerMode == RecTriggerMode::SIGNAL);
+	m_play.setStatus(m::clock::isRunning());
+	m_recAction.setStatus(m::recManager::isRecordingAction());
+	m_recInput.setStatus(m::recManager::isRecordingInput());
+	m_metronome.setStatus(m::sequencer::isMetronomeOn());
+	m_recTriggerMode.setStatus(m::conf::conf.recTriggerMode == RecTriggerMode::SIGNAL);
+	m_inputRecMode.setStatus(m::conf::conf.inputRecMode == InputRecMode::FREE);
 }
-}} // giada::v::
+} // namespace giada::v

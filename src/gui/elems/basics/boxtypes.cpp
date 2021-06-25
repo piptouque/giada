@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,34 +26,30 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <FL/fl_draw.H>
-#include "../../../core/const.h"
 #include "boxtypes.h"
-
+#include "../../../core/const.h"
+#include <FL/fl_draw.H>
 
 void g_customBorderBox(int x, int y, int w, int h, Fl_Color c)
 {
-  fl_color(c);
-  fl_rectf(x, y, w, h);
-  fl_color(G_COLOR_GREY_4);
-  fl_rect(x, y, w, h);
+	fl_color(c);
+	fl_rectf(x, y, w, h);
+	fl_color(G_COLOR_GREY_4);
+	fl_rect(x, y, w, h);
 }
-
 
 void g_customUpBox(int x, int y, int w, int h, Fl_Color /*c*/)
 {
-  fl_color(G_COLOR_GREY_2);
-  fl_rectf(x, y, w, h);
-  fl_color(G_COLOR_GREY_2);
-  fl_rect(x, y, w, h);
+	fl_color(G_COLOR_GREY_2);
+	fl_rectf(x, y, w, h);
+	fl_color(G_COLOR_GREY_2);
+	fl_rect(x, y, w, h);
 }
-
 
 void g_customDownBox(int x, int y, int w, int h, Fl_Color c)
 {
-  fl_color(c);
-  fl_rectf(x, y, w, h);
-  fl_color(G_COLOR_GREY_2);
-  fl_rect(x, y, w, h);
+	fl_color(c);
+	fl_rectf(x, y, w, h);
+	fl_color(G_COLOR_GREY_2);
+	fl_rect(x, y, w, h);
 }

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,17 +24,17 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <RtMidi.h>
-#include "core/const.h"
-#include <sndfile.h>
-#include "deps/rtaudio/RtAudio.h"
 #include "ver.h"
+#include "core/const.h"
+#include "deps/rtaudio/RtAudio.h"
+#include <RtMidi.h>
+#include <sndfile.h>
 
-
-namespace giada {
-namespace u {
-namespace ver  
+namespace giada
+{
+namespace u
+{
+namespace ver
 {
 std::string getLibsndfileVersion()
 {
@@ -43,9 +43,7 @@ std::string getLibsndfileVersion()
 	return std::string(buffer);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string getRtAudioVersion()
 {
@@ -56,9 +54,7 @@ std::string getRtAudioVersion()
 #endif
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 std::string getRtMidiVersion()
 {
@@ -68,4 +64,6 @@ std::string getRtMidiVersion()
 	return RtMidi::getVersion();
 #endif
 }
-}}}  // giada::u::ver::
+} // namespace ver
+} // namespace u
+} // namespace giada

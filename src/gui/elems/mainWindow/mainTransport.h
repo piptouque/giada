@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,42 +24,34 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_MAIN_TRANSPORT_H
 #define GE_MAIN_TRANSPORT_H
 
-
+#include "gui/elems/basics/box.h"
+#include "gui/elems/basics/button.h"
 #include "gui/elems/basics/pack.h"
+#include "gui/elems/basics/statusButton.h"
 
-
-class geButton;
-class geBox;
-class geStatusButton;
-
-
-namespace giada {
-namespace v
+namespace giada::v
 {
 class geMainTransport : public gePack
 {
 public:
-
 	geMainTransport(int x, int y);
 
 	void refresh();
 
 private:
-
-	geButton* rewind;
-	geStatusButton* play;
-	geBox* spacer1;	
-	geStatusButton* recTriggerMode;
-	geStatusButton* recAction;
-	geStatusButton* recInput;
-	geBox* spacer2;
-	geStatusButton* metronome;
+	geButton       m_rewind;
+	geStatusButton m_play;
+	geBox          m_spacer1;
+	geStatusButton m_recTriggerMode;
+	geStatusButton m_recAction;
+	geStatusButton m_recInput;
+	geStatusButton m_inputRecMode;
+	geBox          m_spacer2;
+	geStatusButton m_metronome;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

@@ -6,7 +6,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -26,17 +26,18 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_UTILS_TIME_H
 #define G_UTILS_TIME_H
 
-
-namespace giada {
-namespace u     {
-namespace time 
+namespace giada
+{
+namespace u
+{
+namespace time
 {
 void sleep(int millisecs);
-}}}
-
+}
+} // namespace u
+} // namespace giada
 
 #endif

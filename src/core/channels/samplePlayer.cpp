@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,234 +24,225 @@
  *
  * -------------------------------------------------------------------------- */
 
-
+#include "samplePlayer.h"
+#include "core/channels/channel.h"
+#include "core/clock.h"
+#include "core/wave.h"
+#include "core/waveManager.h"
 #include <algorithm>
 #include <cassert>
-#include "core/channels/channel.h"
-#include "core/channels/state.h"
-#include "core/wave.h"
-#include "core/clock.h"
-#include "samplePlayer.h"
 
+namespace giada::m::samplePlayer
+{
+namespace
+{
+bool shouldLoop_(const channel::Data& ch)
+{
+	ChannelStatus    playStatus = ch.state->playStatus.load();
+	SamplePlayerMode mode       = ch.samplePlayer->mode;
 
-namespace giada {
-namespace m 
-{
-SamplePlayer::SamplePlayer(ChannelState* c)
-: state             (std::make_unique<SamplePlayerState>())
-, m_waveId          (0)
-, m_sampleController(c, state.get())
-, m_channelState    (c)
-{
+	return (mode == SamplePlayerMode::LOOP_BASIC ||
+	           mode == SamplePlayerMode::LOOP_REPEAT ||
+	           mode == SamplePlayerMode::SINGLE_ENDLESS) &&
+	       playStatus == ChannelStatus::PLAY;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-SamplePlayer::SamplePlayer(const SamplePlayer& o, ChannelState* c)
-: state             (std::make_unique<SamplePlayerState>(*o.state))
-, m_waveId          (o.m_waveId)
-, m_waveReader      (o.m_waveReader)
-, m_sampleController(o.m_sampleController, c, state.get())
-, m_channelState    (c)
+WaveReader::Result fillBuffer_(const channel::Data& ch, Frame start, Frame offset)
 {
-}
+	AudioBuffer&      buffer     = ch.buffer->audio;
+	const WaveReader& waveReader = ch.samplePlayer->waveReader;
 
+	return waveReader.fill(buffer, start, ch.samplePlayer->end, offset, ch.samplePlayer->pitch);
+}
 
 /* -------------------------------------------------------------------------- */
 
-
-SamplePlayer::SamplePlayer(const patch::Channel& p, ChannelState* c)
-: state             (std::make_unique<SamplePlayerState>(p))
-, m_waveId          (p.waveId)
-, m_sampleController(c, state.get())
-, m_channelState    (c)
+bool isPlaying_(const channel::Data& ch)
 {
+	return ch.samplePlayer->waveReader.wave != nullptr && ch.isPlaying();
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void SamplePlayer::parse(const mixer::Event& e) const
+void setWave_(samplePlayer::Data& sp, Wave* w, float samplerateRatio)
 {
-    if (e.type == mixer::EventType::CHANNEL_PITCH)
-        state->pitch.store(e.action.event.getVelocityFloat());
+	if (w == nullptr)
+	{
+		sp.waveReader.wave = nullptr;
+		return;
+	}
 
-    if (hasWave())
-        m_sampleController.parse(e);
+	sp.waveReader.wave = w;
+
+	if (samplerateRatio != 1.0f)
+	{
+		sp.begin *= samplerateRatio;
+		sp.end *= samplerateRatio;
+		sp.shift *= samplerateRatio;
+	}
 }
+} // namespace
 
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+Data::Data()
+: pitch(G_DEFAULT_PITCH)
+, mode(SamplePlayerMode::SINGLE_BASIC)
+, velocityAsVol(false)
+{
+}
 
 /* -------------------------------------------------------------------------- */
 
-
-void SamplePlayer::advance(Frame bufferSize) const
+Data::Data(const patch::Channel& p, float samplerateRatio)
+: pitch(p.pitch)
+, mode(p.mode)
+, shift(p.shift)
+, begin(p.begin)
+, end(p.end)
+, velocityAsVol(p.midiInVeloAsVol)
 {
-    m_sampleController.advance(bufferSize);
+	setWave_(*this, waveManager::hydrateWave(p.waveId), samplerateRatio);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
+bool Data::hasWave() const { return waveReader.wave != nullptr; }
+bool Data::hasLogicalWave() const { return hasWave() && waveReader.wave->isLogical(); }
+bool Data::hasEditedWave() const { return hasWave() && waveReader.wave->isEdited(); }
 
-void SamplePlayer::render(AudioBuffer& /*out*/) const
+/* -------------------------------------------------------------------------- */
+
+bool Data::isAnyLoopMode() const
 {
-    assert(m_channelState != nullptr);
+	return mode == SamplePlayerMode::LOOP_BASIC ||
+	       mode == SamplePlayerMode::LOOP_ONCE ||
+	       mode == SamplePlayerMode::LOOP_REPEAT ||
+	       mode == SamplePlayerMode::LOOP_ONCE_BAR;
+}
 
-    if (m_waveReader.wave == nullptr || !m_channelState->isPlaying())
-        return;
+/* -------------------------------------------------------------------------- */
 
-    Frame begin   = state->begin.load();
-    Frame end     = state->end.load();
-    Frame tracker = state->tracker.load();
-    float pitch   = state->pitch.load();
-    Frame used    = 0;
+Wave* Data::getWave() const
+{
+	return waveReader.wave;
+}
 
-    /* Audio data is temporarily stored to the working audio buffer. */
+ID Data::getWaveId() const
+{
+	if (hasWave())
+		return waveReader.wave->id;
+	return 0;
+}
 
-    AudioBuffer& buffer = m_channelState->buffer;
+/* -------------------------------------------------------------------------- */
 
-    /* Adjust tracker in case someone has changed the begin/end points in the
-    meantime. */
-    
-    if (tracker < begin || tracker >= end)
-        tracker = begin;
+Frame Data::getWaveSize() const
+{
+	return hasWave() ? waveReader.wave->getBuffer().countFrames() : 0;
+}
 
-    /* If rewinding, fill the tail first, then reset the tracker to the begin
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+void react(channel::Data& ch, const eventDispatcher::Event& e)
+{
+	if (e.type == eventDispatcher::EventType::CHANNEL_PITCH)
+		ch.samplePlayer->pitch = std::get<float>(e.data);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void advance(const channel::Data& ch, const sequencer::Event& e)
+{
+	sampleAdvancer::advance(ch, e);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void render(const channel::Data& ch)
+{
+	if (!isPlaying_(ch))
+		return;
+
+	const Frame begin = ch.samplePlayer->begin;
+	const Frame end   = ch.samplePlayer->end;
+
+	/* Make sure tracker stays within begin-end range. */
+
+	Frame tracker = std::clamp(ch.state->tracker.load(), begin, end);
+
+	/* If rewinding, fill the tail first, then reset the tracker to the begin
     point. The rest is performed as usual. */
 
-    if (state->rewinding) {
+	if (ch.state->rewinding)
+	{
 		if (tracker < end)
-            m_waveReader.fill(buffer, tracker, 0, pitch);
-        state->rewinding = false;
+			fillBuffer_(ch, tracker, 0);
+		ch.state->rewinding = false;
+		tracker             = begin;
+	}
+
+	WaveReader::Result res = fillBuffer_(ch, tracker, ch.state->offset);
+	tracker += res.used;
+
+	/* If tracker has looped, special care is needed for the rendering. If the
+    channel is in loop mode, fill the second part of the buffer with data
+    coming from the sample's head. */
+
+	if (tracker >= end)
+	{
 		tracker = begin;
-    }
+		sampleAdvancer::onLastFrame(ch); // TODO - better moving this to samplerAdvancer::advance
+		if (shouldLoop_(ch))
+			tracker += fillBuffer_(ch, tracker, res.generated).used;
+	}
 
-    used     = m_waveReader.fill(buffer, tracker, state->offset, pitch);
-    tracker += used;
-
-G_DEBUG ("block=[" << tracker - used << ", " << tracker << ")" << 
-         ", used=" << used << ", range=[" << begin << ", " << end << ")" <<
-         ", tracker=" << tracker << 
-         ", offset=" << state->offset << ", globalFrame=" << clock::getCurrentFrame());
-
-    if (tracker >= end) {
-G_DEBUG ("last frame tracker=" << tracker);
-        tracker = begin;
-        m_sampleController.onLastFrame();
-        if (shouldLoop()) {
-            Frame offset = std::min(static_cast<Frame>(used / pitch), buffer.countFrames() - 1);
-            tracker += m_waveReader.fill(buffer, tracker, offset, pitch);
-        }
-    }
-
-    state->offset = 0;
-    state->tracker.store(tracker);
+	ch.state->offset = 0;
+	ch.state->tracker.store(tracker);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void SamplePlayer::loadWave(const Wave* w)
+void loadWave(channel::Data& ch, Wave* w)
 {
-    m_waveReader.wave = w;
+	ch.samplePlayer->waveReader.wave = w;
 
-    state->tracker.store(0);
-    state->shift.store(0);
-    state->begin.store(0);
+	ch.state->tracker.store(0);
+	ch.samplePlayer->shift = 0;
+	ch.samplePlayer->begin = 0;
 
-    if (w != nullptr) {
-        m_waveId = w->id;
-        m_channelState->playStatus.store(ChannelStatus::OFF);
-        m_channelState->name = w->getBasename(/*ext=*/false);
-        state->end.store(w->getSize() - 1);
-    }
-    else {
-        m_waveId = 0;
-        m_channelState->playStatus.store(ChannelStatus::EMPTY);
-        m_channelState->name = "";
-        state->end.store(0);
-    }
+	if (w != nullptr)
+	{
+		ch.state->playStatus.store(ChannelStatus::OFF);
+		ch.name              = w->getBasename(/*ext=*/false);
+		ch.samplePlayer->end = w->getBuffer().countFrames() - 1;
+	}
+	else
+	{
+		ch.state->playStatus.store(ChannelStatus::EMPTY);
+		ch.name              = "";
+		ch.samplePlayer->end = 0;
+	}
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void SamplePlayer::setWave(const Wave& w, float samplerateRatio)
+void setWave(channel::Data& ch, Wave* w, float samplerateRatio)
 {
-    m_waveReader.wave = &w;
-    m_waveId = w.id;
-
-    if (samplerateRatio != 1.0f) {
-        Frame begin = state->begin.load();
-        Frame end   = state->end.load();
-        Frame shift = state->shift.load();
-        state->begin.store(begin * samplerateRatio);
-        state->end.store(end * samplerateRatio);
-        state->shift.store(shift * samplerateRatio);
-    }
+	setWave_(ch.samplePlayer.value(), w, samplerateRatio);
 }
-
-
-void SamplePlayer::setInvalidWave()
-{
-    m_waveReader.wave = nullptr;
-    m_waveId = 0;
-}
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void SamplePlayer::kickIn(Frame f)
+void kickIn(channel::Data& ch, Frame f)
 {
-    assert(hasWave());
-    
-	state->tracker.store(f);
-	m_channelState->playStatus.store(ChannelStatus::PLAY);    
+	ch.state->tracker.store(f);
+	ch.state->playStatus.store(ChannelStatus::PLAY);
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-bool SamplePlayer::shouldLoop() const
-{
-    ChannelStatus    playStatus = m_channelState->playStatus.load();
-    SamplePlayerMode mode       = state->mode.load();
-    
-    return (mode == SamplePlayerMode::LOOP_BASIC  || 
-            mode == SamplePlayerMode::LOOP_REPEAT || 
-            mode == SamplePlayerMode::SINGLE_ENDLESS) && playStatus == ChannelStatus::PLAY;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-bool SamplePlayer::hasWave() const        { return m_waveReader.wave != nullptr; }
-bool SamplePlayer::hasLogicalWave() const { return hasWave() && m_waveReader.wave->isLogical(); }
-bool SamplePlayer::hasEditedWave() const  { return hasWave() && m_waveReader.wave->isEdited(); }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-ID SamplePlayer::getWaveId() const
-{
-    return m_waveId;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-Frame SamplePlayer::getWaveSize() const
-{
-    return hasWave() ? m_waveReader.wave->getSize() : 0;
-}
-}} // giada::m::
+} // namespace giada::m::samplePlayer

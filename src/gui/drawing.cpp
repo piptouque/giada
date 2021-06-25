@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,36 +24,28 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include "drawing.h"
+#include <FL/Fl.H>
 
-#include <FL/fl_draw.H>
-#include "core/const.h"
-#include "radio.h"
-
-
-geRadio::geRadio(int x, int y, int w, int h, const char *l)
-: Fl_Radio_Button(x, y, w, h, l)
+namespace giada::v
 {
+void drawRectf(geompp::Rect<int> r, Fl_Color c)
+{
+	fl_rectf(r.x, r.y, r.w, r.h, c);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void geRadio::draw()
+void drawRect(geompp::Rect<int> r, Fl_Color c)
 {
-	int color = !active() ? FL_INACTIVE_COLOR : G_COLOR_GREY_4;
-
-	if (value()) {
-		fl_rect(x(), y(), 12, h(), (Fl_Color) color);
-		fl_rectf(x(), y(), 12, h(), (Fl_Color) color);
-	}
-	else {
-		fl_rectf(x(), y(), 12, h(), FL_BACKGROUND_COLOR);
-		fl_rect(x(), y(), 12, h(), (Fl_Color) color);
-	}
-
-	fl_rectf(x()+20, y(), w(), h(), FL_BACKGROUND_COLOR);  // clearer
-	fl_font(FL_HELVETICA, G_GUI_FONT_SIZE_BASE);
-	fl_color(G_COLOR_LIGHT_2);
-	fl_draw(label(), x()+20, y(), w(), h(), (Fl_Align) (FL_ALIGN_LEFT | FL_ALIGN_TOP));
+	fl_rect(r.x, r.y, r.w, r.h, c);
 }
+
+/* -------------------------------------------------------------------------- */
+
+void drawLine(geompp::Line<int> l, Fl_Color c)
+{
+	fl_color(c);
+	fl_line(l.x1, l.y1, l.x2, l.y2);
+}
+} // namespace giada::v

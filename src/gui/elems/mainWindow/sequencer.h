@@ -2,9 +2,11 @@
  *
  * Giada - Your Hardcore Loopmachine
  *
+ * beatMeter
+ *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,28 +26,39 @@
  *
  * -------------------------------------------------------------------------- */
 
+#ifndef GE_SEQUENCER_H
+#define GE_SEQUENCER_H
 
-#ifndef G_MODEL_TRAITS_H
-#define G_MODEL_TRAITS_H
+#include "core/types.h"
+#include "deps/geompp/src/rect.hpp"
+#include "glue/main.h"
+#include <FL/Fl_Box.H>
 
-
-#include <type_traits>
-#include "core/wave.h"
-#include "core/plugins/plugin.h"
-#include "core/channels/channel.h"
-
-
-namespace giada {
-namespace m {
-namespace model
+namespace giada::v
 {
-template <typename T> struct has_id : std::false_type {};
-template <> struct has_id<Channel>  : std::true_type {};
-template <> struct has_id<Wave>     : std::true_type {};
-#ifdef WITH_VST
-template <> struct has_id<Plugin>   : std::true_type {};
-#endif
-}}} // giada::m::model::
+class geSequencer : public Fl_Box
+{
+public:
+	geSequencer(int x, int y, int w, int h);
 
+	void draw() override;
+
+	void refresh();
+
+private:
+	static constexpr int REC_BARS_H = 3;
+	static constexpr int CURSOR_PAD = 3;
+
+	void drawBody() const;
+	void drawCursor() const;
+	void drawCursor(int beat, Fl_Color col) const;
+	void drawRecBars() const;
+
+	c::main::Sequencer m_data;
+
+	geompp::Rect<int> m_background;
+	geompp::Rect<int> m_cell;
+};
+} // namespace giada::v
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,22 +24,17 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_V_MODEL_H
 #define G_V_MODEL_H
 
-
-namespace giada {
-namespace m { namespace patch
+namespace giada::m::patch
 {
 struct Patch;
-}}
-namespace v {
-namespace model
+}
+namespace giada::v::model
 {
 void store(m::patch::Patch& patch);
 void load(const m::patch::Patch& patch);
-}}} // giada::v::model
-
+} // namespace giada::v::model
 
 #endif

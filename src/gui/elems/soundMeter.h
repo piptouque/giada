@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,33 +24,25 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_SOUND_METER_H
 #define GE_SOUND_METER_H
 
-
 #include <FL/Fl_Box.H>
 
-
-namespace giada {
-namespace v
+namespace giada::v
 {
 class geSoundMeter : public Fl_Box
 {
 public:
-
-	geSoundMeter(int x, int y, int w, int h, const char* l=0);
+	geSoundMeter(int x, int y, int w, int h, const char* l = 0);
 
 	void draw() override;
 
-    float mixerPeak;    // peak from mixer
+	float mixerPeak; // peak from mixer
 
 private:
-
-	float m_dbLevelCur;
 	float m_dbLevelOld;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

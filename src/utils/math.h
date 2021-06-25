@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,22 +24,16 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_UTILS_MATH_H
 #define G_UTILS_MATH_H
 
-
 #include <type_traits>
 
-
-namespace giada {
-namespace u     {
-namespace math 
+namespace giada::u::math
 {
 float linearToDB(float f);
 float dBtoLinear(float f);
-int quantize(int x, int step);
-
+int   quantize(int x, int step);
 
 /* -------------------------------------------------------------------------- */
 
@@ -52,10 +46,9 @@ TO map(TI x, TI a, TI b, TO w, TO z)
 {
 	static_assert(std::is_arithmetic_v<TI>);
 	static_assert(std::is_arithmetic_v<TO>);
-	
-	return (((x - a) / (double) (b - a)) * (z - w)) + w;
-}
 
+	return (((x - a) / (double)(b - a)) * (z - w)) + w;
+}
 
 /* map (2)
 Maps 'x' in range [0, b) to a new range [0, z]. */
@@ -63,12 +56,8 @@ Maps 'x' in range [0, b) to a new range [0, z]. */
 template <typename TI, typename TO>
 TO map(TI x, TI b, TO z)
 {
-	static_assert(std::is_arithmetic_v<TI>);
-	static_assert(std::is_arithmetic_v<TO>);
-	
-	return static_cast<TO>((x / (double) b) * z);
+	return map(x, static_cast<TI>(0), b, static_cast<TO>(0), z);
 }
-}}}  // giada::u::math::
-
+} // namespace giada::u::math
 
 #endif

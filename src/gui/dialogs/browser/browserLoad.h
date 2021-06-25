@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,35 +24,32 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_BROWSER_LOAD_H
 #define GD_BROWSER_LOAD_H
 
-
 #include "browserBase.h"
 
-
-namespace giada {
-namespace m 
-{ 
-class Channel; 
+namespace giada
+{
+namespace m
+{
+class Channel;
 }
 namespace v
 {
 class gdBrowserLoad : public gdBrowserBase
 {
 public:
+	gdBrowserLoad(const std::string& title, const std::string& path,
+	    std::function<void(void*)> cb, ID channelId);
 
-    gdBrowserLoad(const std::string& title, const std::string& path, 
-        std::function<void(void*)> cb, ID channelId);
-
-private:
-
+  private:
 	static void cb_load(Fl_Widget* /*w*/, void* p);
 	static void cb_down(Fl_Widget* /*w*/, void* p);
-	void cb_load();
-	void cb_down();
+	void        cb_load();
+	void        cb_down();
 };
-}} // giada::v::
+} // namespace v
+} // namespace giada
 
 #endif

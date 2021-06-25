@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,18 +24,17 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_KERNELAUDIO_H
 #define G_KERNELAUDIO_H
 
-
+#include <optional>
 #include <string>
+#include <vector>
 #ifdef WITH_AUDIO_JACK
-	#include <jack/jack.h>
-	#include <jack/intclient.h>
-	#include <jack/transport.h>
+#include <jack/intclient.h>
+#include <jack/jack.h>
+#include <jack/transport.h>
 #endif
-
 
 namespace giada::m::kernelAudio
 {
@@ -52,41 +51,42 @@ struct JackState
 
 #endif
 
+struct Device
+{
+	size_t           index             = 0;
+	bool             probed            = false;
+	std::string      name              = "";
+	int              maxOutputChannels = 0;
+	int              maxInputChannels  = 0;
+	int              maxDuplexChannels = 0;
+	bool             isDefaultOut      = false;
+	bool             isDefaultIn       = false;
+	std::vector<int> sampleRates       = {};
+};
+
 int openDevice();
 int closeDevice();
 int startStream();
 int stopStream();
 
-bool isReady();
-bool isProbed(unsigned dev);
-bool isDefaultIn(unsigned dev);
-bool isDefaultOut(unsigned dev);
-bool isInputEnabled();
-std::string getDeviceName(unsigned dev);
-unsigned getMaxInChans(int dev);
-unsigned getMaxOutChans(unsigned dev);
-unsigned getDuplexChans(unsigned dev);
-unsigned getRealBufSize();
-unsigned countDevices();
-int getTotalFreqs(unsigned dev);
-int getFreq(unsigned dev, int i);
-int getDeviceByName(const char* name);
-int getDefaultOut();
-int getDefaultIn();
-bool hasAPI(int API);
-int getAPI();
-void logCompiledAPIs();
+bool                       isReady();
+bool                       isInputEnabled();
+unsigned                   getRealBufSize();
+bool                       hasAPI(int API);
+int                        getAPI();
+void                       logCompiledAPIs();
+Device                     getDevice(const char* name);
+const std::vector<Device>& getDevices();
 
 #ifdef WITH_AUDIO_JACK
 
-void jackStart();
-void jackStop();
-void jackSetPosition(uint32_t frame);
-void jackSetBpm(double bpm);
+void      jackStart();
+void      jackStop();
+void      jackSetPosition(uint32_t frame);
+void      jackSetBpm(double bpm);
 JackState jackTransportQuery();
 
 #endif
-} // giada::m::kernelAudio::
-
+} // namespace giada::m::kernelAudio
 
 #endif

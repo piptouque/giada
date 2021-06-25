@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,51 +24,46 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CHANNEL_MANAGER_H
 #define G_CHANNEL_MANAGER_H
 
-
-#include <memory>
 #include "core/types.h"
 
-
-namespace giada {
-namespace m 
+namespace giada::m::channel
 {
-namespace conf
+struct Data;
+}
+namespace giada::m::conf
 {
 struct Conf;
 }
-namespace patch
+namespace giada::m::patch
 {
 struct Channel;
 }
-class  Channel;
-struct ChannelState;
-namespace channelManager
+namespace giada::m::channelManager
 {
 /* init
 Initializes internal data. */
-	
+
 void init();
 
 /* create (1)
-Creates a new Channel from scratch. */
+Creates a new channel. If channelId == 0 generates a new ID, reuse the one 
+passed in otherwise. */
 
-std::unique_ptr<Channel> create(ChannelType type, ID columnId, const conf::Conf& conf);
+channel::Data create(ID channelId, ChannelType type, ID columnId);
 
 /* create (2)
-Creates a new Channel given an existing one (i.e. clone). */
+Creates a new channel given an existing one (i.e. clone). */
 
-std::unique_ptr<Channel> create(const Channel& ch);
+channel::Data create(const channel::Data& ch);
 
 /* (de)serializeWave
-Creates a new Channel given the patch raw data and vice versa. */
+Creates a new channel given the patch raw data and vice versa. */
 
-std::unique_ptr<Channel> deserializeChannel(const patch::Channel& c, int bufferSize);
-const patch::Channel     serializeChannel(const Channel& c);
-}}} // giada::m::channelManager
-
+channel::Data        deserializeChannel(const patch::Channel& c, float samplerateRatio);
+const patch::Channel serializeChannel(const channel::Data& c);
+} // namespace giada::m::channelManager
 
 #endif

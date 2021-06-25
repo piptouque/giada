@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,158 +24,138 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
 
-
-#include <cassert>
-#include <FL/Fl.H>
-#include "core/model/model.h"
-#include "core/plugins/pluginManager.h"
-#include "core/plugins/pluginHost.h"
-#include "core/mixer.h"
 #include "core/plugins/plugin.h"
-#include "core/const.h"
 #include "core/conf.h"
-#include "utils/gui.h"
-#include "gui/dialogs/mainWindow.h"
-#include "gui/dialogs/pluginWindow.h"
-#include "gui/dialogs/pluginList.h"
-#include "gui/dialogs/warnings.h"
-#include "gui/dialogs/config.h"
+#include "core/const.h"
+#include "core/mixer.h"
+#include "core/model/model.h"
+#include "core/plugins/pluginHost.h"
+#include "core/plugins/pluginManager.h"
 #include "gui/dialogs/browser/browserDir.h"
+#include "gui/dialogs/config.h"
+#include "gui/dialogs/mainWindow.h"
+#include "gui/dialogs/pluginList.h"
+#include "gui/dialogs/pluginWindow.h"
+#include "gui/dialogs/warnings.h"
 #include "plugin.h"
-
+#include "utils/gui.h"
+#include <FL/Fl.H>
+#include <cassert>
 
 extern giada::v::gdMainWindow* G_MainWin;
 
-
-namespace giada {
-namespace c {
-namespace plugin 
+namespace giada::c::plugin
 {
-Param::Param(const m::Plugin& p, int index)
-: index   (index)
+Param::Param(const m::Plugin& p, int index, ID channelId)
+: index(index)
 , pluginId(p.id)
-, name    (p.getParameterName(index))
-, text    (p.getParameterText(index))
-, label   (p.getParameterLabel(index))
-, value   (p.getParameter(index))
+, channelId(channelId)
+, name(p.getParameterName(index))
+, text(p.getParameterText(index))
+, label(p.getParameterLabel(index))
+, value(p.getParameter(index))
 {
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-
 
 Plugin::Plugin(m::Plugin& p, ID channelId)
-: id            (p.id)
-, channelId     (channelId)
-, valid         (p.valid)
-, hasEditor     (p.hasEditor())
-, isBypassed    (p.isBypassed())
-, name          (p.getName())
-, uniqueId      (p.getUniqueId())
+: id(p.id)
+, channelId(channelId)
+, valid(p.valid)
+, hasEditor(p.hasEditor())
+, isBypassed(p.isBypassed())
+, name(p.getName())
+, uniqueId(p.getUniqueId())
 , currentProgram(p.getCurrentProgram())
-, m_plugin      (p)
+, m_plugin(p)
 {
 	for (int i = 0; i < p.getNumPrograms(); i++)
-	 	programs.push_back({ i, p.getProgramName(i) });
+		programs.push_back({i, p.getProgramName(i)});
 	for (int i = 0; i < p.getNumParameters(); i++)
 		paramIndexes.push_back(i);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 juce::AudioProcessorEditor* Plugin::createEditor() const
 {
-	m::model::PluginsLock l(m::model::plugins);
 	return m_plugin.createEditor();
 }
 
-
 /* -------------------------------------------------------------------------- */
 
+const m::Plugin& Plugin::getPluginRef() const { return m_plugin; }
+
+/* -------------------------------------------------------------------------- */
 
 void Plugin::setResizeCallback(std::function<void(int, int)> f)
 {
 	m_plugin.onEditorResize = f;
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-
-Plugins::Plugins(const m::Channel& c)
+Plugins::Plugins(const m::channel::Data& c)
 : channelId(c.id)
-, pluginIds(c.pluginIds) 
+, plugins(c.plugins)
 {
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-
 
 Plugins getPlugins(ID channelId)
 {
-	namespace mm = m::model;
-
-	mm::ChannelsLock cl(mm::channels);
-	return Plugins(mm::get(mm::channels, channelId));
+	return Plugins(m::model::get().getChannel(channelId));
 }
 
-
-Plugin getPlugin(ID pluginId, ID channelId)
+Plugin getPlugin(m::Plugin& plugin, ID channelId)
 {
-	m::model::PluginsLock l(m::model::plugins);
-	return Plugin(m::model::get(m::model::plugins, pluginId), channelId);
+	return Plugin(plugin, channelId);
 }
 
-
-Param getParam (int index, ID pluginId)
+Param getParam(int index, const m::Plugin& plugin, ID channelId)
 {
-	m::model::PluginsLock l(m::model::plugins);
-	return Param(m::model::get(m::model::plugins, pluginId), index);
+	return Param(plugin, index, channelId);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
 void updateWindow(ID pluginId, bool gui)
 {
-	m::model::PluginsLock l(m::model::plugins);
-	const m::Plugin& p = m::model::get(m::model::plugins, pluginId);
+	m::Plugin* p = m::model::find<m::Plugin>(pluginId);
 
-	if (p.hasEditor())
+	assert(p != nullptr);
+
+	if (p->hasEditor())
 		return;
 
 	/* Get the parent window first: the plug-in list. Then, if it exists, get
-	the child window - the actual pluginWindow. */
+    the child window - the actual pluginWindow. */
 
 	v::gdPluginList* parent = static_cast<v::gdPluginList*>(u::gui::getSubwindow(G_MainWin, WID_FX_LIST));
 	if (parent == nullptr)
 		return;
 	v::gdPluginWindow* child = static_cast<v::gdPluginWindow*>(u::gui::getSubwindow(parent, pluginId + 1));
-	if (child == nullptr) 
+	if (child == nullptr)
 		return;
-	
-	if (!gui) Fl::lock();
+
+	if (!gui)
+		Fl::lock();
 	child->updateParameters(!gui);
-	if (!gui) Fl::unlock();
+	if (!gui)
+		Fl::unlock();
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void addPlugin(int pluginListIndex, ID channelId)
 {
@@ -186,52 +166,43 @@ void addPlugin(int pluginListIndex, ID channelId)
 		m::pluginHost::addPlugin(std::move(p), channelId);
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-void swapPlugins(ID pluginId1, ID pluginId2, ID channelId)
+void swapPlugins(const m::Plugin& p1, const m::Plugin& p2, ID channelId)
 {
-	m::pluginHost::swapPlugin(pluginId1, pluginId2, channelId);
+	m::pluginHost::swapPlugin(p1, p2, channelId);
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-void freePlugin(ID pluginId, ID channelId)
+void freePlugin(const m::Plugin& plugin, ID channelId)
 {
-	m::pluginHost::freePlugin(pluginId, channelId);
+	m::pluginHost::freePlugin(plugin, channelId);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void setProgram(ID pluginId, int programIndex)
 {
-	m::pluginHost::setPluginProgram(pluginId, programIndex); 
-	updateWindow(pluginId, /*gui=*/true); 
+	m::pluginHost::setPluginProgram(pluginId, programIndex);
+	updateWindow(pluginId, /*gui=*/true);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void toggleBypass(ID pluginId)
 {
 	m::pluginHost::toggleBypass(pluginId);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void setPluginPathCb(void* data)
 {
-	v::gdBrowserDir* browser = (v::gdBrowserDir*) data;
+	v::gdBrowserDir* browser = (v::gdBrowserDir*)data;
 
-	if (browser->getCurrentPath() == "") {
+	if (browser->getCurrentPath() == "")
+	{
 		v::gdAlert("Invalid path.");
 		return;
 	}
@@ -245,8 +216,6 @@ void setPluginPathCb(void* data)
 	v::gdConfig* configWin = static_cast<v::gdConfig*>(u::gui::getSubwindow(G_MainWin, WID_CONFIG));
 	configWin->refreshVstPath();
 }
-
-}}} // giada::c::plugin::
-
+} // namespace giada::c::plugin
 
 #endif

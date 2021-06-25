@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,35 +24,29 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_COLUMN_H
 #define GE_COLUMN_H
 
-
+#include "core/types.h"
+#include "glue/channel.h"
+#include <FL/Fl_Group.H>
 #include <functional>
 #include <vector>
-#include <FL/Fl_Group.H>
-#include "glue/channel.h"
-#include "core/types.h"
-
 
 class geButton;
 class geResizerBar;
 
-
-namespace giada {
-namespace v
+namespace giada::v
 {
 class geKeyboard;
 class geChannel;
 class geColumn : public Fl_Group
 {
 public:
-
 	geColumn(int x, int y, int w, int h, ID id, geResizerBar* b);
 
 	geChannel* getChannel(ID channelId) const;
-	
+
 	/* addChannel
 	Adds a new channel in this column. */
 
@@ -63,18 +57,17 @@ public:
 
 	void refresh();
 
-	void init(); 
+	void init();
 
 	void forEachChannel(std::function<void(geChannel& c)> f) const;
-	
+
 	ID id;
 
 	geResizerBar* resizerBar;
 
-private:
-
+  private:
 	static void cb_addChannel(Fl_Widget* /*w*/, void* p);
-	void cb_addChannel();
+	void        cb_addChannel();
 
 	int countChannels() const;
 	int computeHeight() const;
@@ -83,7 +76,6 @@ private:
 
 	geButton* m_addChannelBtn;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

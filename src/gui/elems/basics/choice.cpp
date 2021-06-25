@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,21 +24,19 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <string>
-#include <FL/fl_draw.H>
+#include "choice.h"
 #include "core/const.h"
 #include "utils/gui.h"
 #include "utils/vector.h"
-#include "choice.h"
+#include <FL/fl_draw.H>
+#include <cassert>
+#include <string>
 
-
-namespace giada {
-namespace v 
+namespace giada::v
 {
 geChoice::geChoice(int x, int y, int w, int h, const char* l, bool ang)
 : Fl_Choice(x, y, w, h, l)
-, angle    (ang)
+, m_angle(ang)
 {
 	labelsize(G_GUI_FONT_SIZE_BASE);
 	labelcolor(G_COLOR_LIGHT_2);
@@ -48,71 +46,70 @@ geChoice::geChoice(int x, int y, int w, int h, const char* l, bool ang)
 	color(G_COLOR_GREY_2);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void geChoice::cb_onChange(Fl_Widget* /*w*/, void* p) { (static_cast<geChoice*>(p))->cb_onChange(); }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void geChoice::cb_onChange()
 {
-	if (onChange != nullptr) onChange(getSelectedId());
+	if (onChange != nullptr)
+		onChange(getSelectedId());
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
 void geChoice::draw()
 {
-	fl_rectf(x(), y(), w(), h(), G_COLOR_GREY_2);              // bg
-	fl_rect(x(), y(), w(), h(), (Fl_Color) G_COLOR_GREY_4);    // border
-	if (angle)
-		fl_polygon(x()+w()-8, y()+h()-1, x()+w()-1, y()+h()-8, x()+w()-1, y()+h()-1);
+	fl_rectf(x(), y(), w(), h(), G_COLOR_GREY_2);                       // bg
+	fl_rect(x(), y(), w(), h(), static_cast<Fl_Color>(G_COLOR_GREY_4)); // border
+	if (m_angle)
+		fl_polygon(x() + w() - 8, y() + h() - 1, x() + w() - 1, y() + h() - 8, x() + w() - 1, y() + h() - 1);
 
 	/* pick up the text() from the selected item (value()) and print it in
 	 * the box and avoid overflows */
 
 	fl_color(!active() ? G_COLOR_GREY_4 : G_COLOR_LIGHT_2);
-	if (value() != -1) 
-		fl_draw(u::gui::truncate(text(value()), w()-16).c_str(), x(), y(), w(), h(), FL_ALIGN_CENTER);
+	if (value() != -1)
+		fl_draw(u::gui::truncate(text(value()), w() - 16).c_str(), x(), y(), w(), h(), FL_ALIGN_CENTER);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 ID geChoice::getSelectedId() const
 {
-	return value() == -1 ? 0 : ids.at(value());	
+	return value() == -1 ? -1 : m_ids.at(value());
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void geChoice::addItem(const std::string& label, ID id)
 {
-	Fl_Choice::add(label.c_str(), 0, cb_onChange, static_cast<void*>(this));
-	ids.push_back(id);
-}
+	assert(id >= 0);
 
+	Fl_Choice::add(label.c_str(), 0, cb_onChange, static_cast<void*>(this));
+	m_ids.push_back(id);
+}
 
 /* -------------------------------------------------------------------------- */
 
-
-void geChoice::showItem(const char* c)
+void geChoice::showItem(const std::string& label)
 {
-	value(find_index(c));
+	value(find_index(label.c_str()));
 }
-
 
 void geChoice::showItem(ID id)
 {
-	value(u::vector::indexOf(ids, id));
+	value(u::vector::indexOf(m_ids, id));
 }
-}}
+
+/* -------------------------------------------------------------------------- */
+
+void geChoice::clear()
+{
+	Fl_Choice::clear();
+	m_ids.clear();
+}
+
+} // namespace giada::v

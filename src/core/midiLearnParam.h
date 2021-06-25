@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,34 +24,29 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_MIDI_LEARN_PARAM_H
 #define G_MIDI_LEARN_PARAM_H
 
-
+#include "core/weakAtomic.h"
 #include <atomic>
-
 
 namespace giada::m
 {
 class MidiLearnParam
 {
 public:
-
 	MidiLearnParam();
-	MidiLearnParam(uint32_t v, std::size_t index=0);
-	MidiLearnParam(const MidiLearnParam& o);
+	MidiLearnParam(uint32_t v, std::size_t index = 0);
+	MidiLearnParam(const MidiLearnParam& o) = default;
 
-    uint32_t getValue() const;
-    std::size_t getIndex() const;
-    void setValue(uint32_t v);
+	uint32_t    getValue() const;
+	std::size_t getIndex() const;
+	void        setValue(uint32_t v);
 
-private:
-
-    std::atomic<uint32_t> m_param;
-    std::size_t           m_index;
+  private:
+	WeakAtomic<uint32_t> m_param;
+	std::size_t          m_index;
 };
-} // giada::m::
-
+} // namespace giada::m
 
 #endif

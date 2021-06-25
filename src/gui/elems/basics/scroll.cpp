@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -27,12 +27,10 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <cassert>
-#include "core/const.h"
-#include "boxtypes.h"
 #include "scroll.h"
-
+#include "boxtypes.h"
+#include "core/const.h"
+#include <cassert>
 
 geScroll::geScroll(int x, int y, int w, int h, int t)
 : Fl_Scroll(x, y, w, h)
@@ -51,9 +49,7 @@ geScroll::geScroll(int x, int y, int w, int h, int t)
 	hscrollbar.slider(G_CUSTOM_BORDER_BOX);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 int geScroll::countChildren() const
 {

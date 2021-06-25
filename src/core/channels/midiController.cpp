@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,103 +24,87 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <cassert>
-#include "core/conf.h"
-#include "core/channels/state.h"
 #include "midiController.h"
+#include "core/channels/channel.h"
+#include "core/conf.h"
+#include <cassert>
 
-
-namespace giada {
-namespace m 
+namespace giada::m::midiController
 {
-MidiController::MidiController(ChannelState* c)
-: m_channelState(c)
+namespace
 {
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-MidiController::MidiController(const MidiController& /*o*/, ChannelState* c)
-: m_channelState(c)
+ChannelStatus onFirstBeat_(const channel::Data& ch)
 {
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiController::parse(const mixer::Event& e) const
-{
-	assert(m_channelState != nullptr);
-
-	switch (e.type) {
-
-		case mixer::EventType::KEY_PRESS:
-			press(); break;
-
-		case mixer::EventType::KEY_KILL:
-		case mixer::EventType::SEQUENCER_STOP:
-			kill();	break;
-
-		case mixer::EventType::SEQUENCER_FIRST_BEAT:
-		case mixer::EventType::SEQUENCER_REWIND:
-			onFirstBeat();	
-
-		default: break;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiController::press() const
-{
-    ChannelStatus playStatus = m_channelState->playStatus.load();
-
-	switch (playStatus) {
-		case ChannelStatus::PLAY:
-			playStatus = ChannelStatus::ENDING; break;
-
-		case ChannelStatus::ENDING:
-		case ChannelStatus::WAIT:
-			playStatus = ChannelStatus::OFF; break;
-
-		case ChannelStatus::OFF:
-			playStatus = ChannelStatus::WAIT; break;
-
-		default: break;
-	}	
-	
-	m_channelState->playStatus.store(playStatus);
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiController::kill() const
-{
-	m_channelState->playStatus.store(ChannelStatus::OFF);
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiController::onFirstBeat() const
-{
-	ChannelStatus playStatus = m_channelState->playStatus.load();
+	ChannelStatus playStatus = ch.state->playStatus.load();
 
 	if (playStatus == ChannelStatus::ENDING)
 		playStatus = ChannelStatus::OFF;
-	else
-	if (playStatus == ChannelStatus::WAIT)
+	else if (playStatus == ChannelStatus::WAIT)
 		playStatus = ChannelStatus::PLAY;
-	
-	m_channelState->playStatus.store(playStatus);
+
+	return playStatus;
 }
-}} // giada::m::
+
+/* -------------------------------------------------------------------------- */
+
+ChannelStatus press_(const channel::Data& ch)
+{
+	ChannelStatus playStatus = ch.state->playStatus.load();
+
+	switch (playStatus)
+	{
+	case ChannelStatus::PLAY:
+		playStatus = ChannelStatus::ENDING;
+		break;
+
+	case ChannelStatus::ENDING:
+	case ChannelStatus::WAIT:
+		playStatus = ChannelStatus::OFF;
+		break;
+
+	case ChannelStatus::OFF:
+		playStatus = ChannelStatus::WAIT;
+		break;
+
+	default:
+		break;
+	}
+
+	return playStatus;
+}
+} // namespace
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+void react(channel::Data& ch, const eventDispatcher::Event& e)
+{
+	switch (e.type)
+	{
+
+	case eventDispatcher::EventType::KEY_PRESS:
+		ch.state->playStatus.store(press_(ch));
+		break;
+
+	case eventDispatcher::EventType::KEY_KILL:
+	case eventDispatcher::EventType::SEQUENCER_STOP:
+		ch.state->playStatus.store(ChannelStatus::OFF);
+		break;
+
+	case eventDispatcher::EventType::SEQUENCER_REWIND:
+		ch.state->playStatus.store(onFirstBeat_(ch));
+
+	default:
+		break;
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+void advance(const channel::Data& ch, const sequencer::Event& e)
+{
+	if (e.type == sequencer::EventType::FIRST_BEAT)
+		ch.state->playStatus.store(onFirstBeat_(ch));
+}
+} // namespace giada::m::midiController

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,20 +24,16 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_ID_MANAGER_H
 #define G_ID_MANAGER_H
 
-
 #include "core/types.h"
 
-
-namespace giada::m 
+namespace giada::m
 {
 class IdManager
 {
 public:
-
 	IdManager();
 
 	/* set
@@ -45,18 +41,21 @@ public:
 
 	void set(ID id);
 
-	/* get
+	/* generate
 	Generates a new unique id. If 'id' parameter is passed in is valid, it just 
 	returns it with no unique id generation. Useful when loading things from the 
 	model that already have their own id. */
 
-	ID   get(ID id=0);
+	ID generate(ID id = 0);
 
-private:
+	/* get
+	Returns the current id, a.k.a. the last generated one. */
 
+	ID get();
+
+  private:
 	ID m_id;
 };
-} // giada::m::
-
+} // namespace giada::m
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,34 +24,30 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include "core/channels/state.h"
 #include "midiLearner.h"
+#include "core/patch.h"
 
-
-namespace giada {
-namespace m 
+namespace giada::m::midiLearner
 {
-MidiLearner::MidiLearner()
-: state(std::make_unique<MidiLearnerState>())
+Data::Data(const patch::Channel& p)
+: enabled(p.midiIn)
+, filter(p.midiInFilter)
+, keyPress(p.midiInKeyPress)
+, keyRelease(p.midiInKeyRel)
+, kill(p.midiInKill)
+, arm(p.midiInArm)
+, volume(p.midiInVolume)
+, mute(p.midiInMute)
+, solo(p.midiInSolo)
+, readActions(p.midiInReadActions)
+, pitch(p.midiInPitch)
 {
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-MidiLearner::MidiLearner(const patch::Channel& p)
-: state(std::make_unique<MidiLearnerState>(p))
+bool Data::isAllowed(int c) const
 {
+	return enabled && (filter == -1 || filter == c);
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-MidiLearner::MidiLearner(const MidiLearner& o)
-: state(std::make_unique<MidiLearnerState>(*o.state))
-{
-}
-}} // giada::m::
+} // namespace giada::m::midiLearner

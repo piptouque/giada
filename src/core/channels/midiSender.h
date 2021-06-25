@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,42 +24,46 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CHANNEL_MIDI_SENDER_H
 #define G_CHANNEL_MIDI_SENDER_H
 
-
-namespace giada {
-namespace m
+namespace giada::m::channel
 {
-namespace mixer
+struct Data;
+}
+namespace giada::m::patch
+{
+struct Channel;
+}
+namespace giada::m::eventDispatcher
 {
 struct Event;
 }
-struct ChannelState;
-struct MidiSenderState;
-class MidiSender
+namespace giada::m::sequencer
 {
-public:
+struct Event;
+}
+namespace giada::m::midiSender
+{
+struct Data
+{
+	Data() = default;
+	Data(const patch::Channel& p);
+	Data(const Data& o) = default;
 
-    MidiSender(ChannelState*);
-    MidiSender(const patch::Channel&, ChannelState*);
-    MidiSender(const MidiSender&, ChannelState* c=nullptr);
+	/* enabled
+    Tells whether MIDI output is enabled or not. */
 
-    void parse(const mixer::Event& e) const;
+	bool enabled;
 
-    /* state
-    Pointer to mutable MidiSenderState state. */
+	/* filter
+    Which MIDI channel data should be sent to. */
 
-    std::unique_ptr<MidiSenderState> state;
-
-private:
-
-    void send(MidiEvent e) const;
-
-    ChannelState* m_channelState;
+	int filter;
 };
-}} // giada::m::
 
+void react(const channel::Data& ch, const eventDispatcher::Event& e);
+void advance(const channel::Data& ch, const sequencer::Event& e);
+} // namespace giada::m::midiSender
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,50 +24,40 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifdef WITH_VST
-
 
 #ifndef GD_PLUGIN_WINDOW_H
 #define GD_PLUGIN_WINDOW_H
 
-
 #include "window.h"
-
 
 class geBox;
 class geSlider;
 class geLiquidScroll;
 
-
-namespace giada {
-namespace c {
-namespace plugin
+namespace giada::c::plugin
 {
-class Plugin;
-}}
-namespace m
+struct Plugin;
+}
+namespace giada::m
 {
 class Plugin;
 }
-namespace v
+namespace giada::v
 {
 class gdPluginWindow : public gdWindow
 {
 public:
-
 	gdPluginWindow(const c::plugin::Plugin&);
 
-	void updateParameters(bool changeSlider=false);
+	void updateParameters(bool changeSlider = false);
 
-private:
-	
+  private:
 	const c::plugin::Plugin& m_plugin;
-		
+
 	geLiquidScroll* m_list;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif
 

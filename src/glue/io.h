@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,70 +24,64 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_GLUE_IO_H
 #define G_GLUE_IO_H
 
-
-#include <atomic>
-#include "core/types.h"
 #include "core/midiEvent.h"
 #include "core/model/model.h"
+#include "core/types.h"
 
-
-namespace giada {
-namespace m
+namespace giada::m::channel
 {
-class Channel;
+struct Data;
 }
-namespace c {
-namespace io 
+namespace giada::c::io
 {
 struct PluginParamData
 {
-    int         index;
-    std::string name;
-    uint32_t    value;
+	int         index;
+	std::string name;
+	uint32_t    value;
 };
 
 struct PluginData
 {
-    ID          id;
-    std::string name;
-    std::vector<PluginParamData> params;
+	ID                           id;
+	std::string                  name;
+	std::vector<PluginParamData> params;
 };
 
 struct Channel_InputData
 {
-    Channel_InputData() = default;
-    Channel_InputData(const m::Channel&);
+	Channel_InputData() = default;
+	Channel_InputData(const m::channel::Data&);
 
-    ID          channelId;
-    ChannelType channelType;
-    bool        enabled;
-    bool        velocityAsVol;
-    int         filter;
+	ID          channelId;
+	ChannelType channelType;
+	bool        enabled;
+	bool        velocityAsVol;
+	int         filter;
 
-    uint32_t    keyPress;
-    uint32_t    keyRelease;
-    uint32_t    kill;
-    uint32_t    arm;
-    uint32_t    volume;
-    uint32_t    mute;
-    uint32_t    solo;
-    uint32_t    pitch;
-    uint32_t    readActions;   
+	uint32_t keyPress;
+	uint32_t keyRelease;
+	uint32_t kill;
+	uint32_t arm;
+	uint32_t volume;
+	uint32_t mute;
+	uint32_t solo;
+	uint32_t pitch;
+	uint32_t readActions;
 
-    std::vector<PluginData> plugins;
+	std::vector<PluginData> plugins;
 };
 
 struct Master_InputData
 {
-    Master_InputData() = default;
-    Master_InputData(const m::model::MidiIn&);
+	Master_InputData() = default;
+	Master_InputData(const m::model::MidiIn&);
 
-    bool     enabled;
-    int      filter;
+	bool enabled;
+	int  filter;
 
 	uint32_t rewind;
 	uint32_t startStop;
@@ -97,29 +91,29 @@ struct Master_InputData
 	uint32_t volumeOut;
 	uint32_t beatDouble;
 	uint32_t beatHalf;
-	uint32_t metronome;	
+	uint32_t metronome;
 };
 
 struct MidiChannel_OutputData
 {
-    MidiChannel_OutputData(const m::MidiSender&);
+	MidiChannel_OutputData(const m::midiSender::Data&);
 
-    bool enabled;
-    int  filter;
+	bool enabled;
+	int  filter;
 };
 
 struct Channel_OutputData
 {
-    Channel_OutputData() = default;
-    Channel_OutputData(const m::Channel&);
+	Channel_OutputData() = default;
+	Channel_OutputData(const m::channel::Data&);
 
-    ID       channelId;
-    bool     lightningEnabled;
-    uint32_t lightningPlaying;
-    uint32_t lightningMute;
-    uint32_t lightningSolo;
+	ID       channelId;
+	bool     lightningEnabled;
+	uint32_t lightningPlaying;
+	uint32_t lightningMute;
+	uint32_t lightningSolo;
 
-    std::optional<MidiChannel_OutputData> output;
+	std::optional<MidiChannel_OutputData> output;
 };
 
 Channel_InputData  channel_getInputData(ID channelId);
@@ -144,18 +138,18 @@ void channel_setKey(ID channelId, int k);
 
 void channel_startMidiLearn(int param, ID channelId);
 void channel_clearMidiLearn(int param, ID channelId);
-void master_clearMidiLearn (int param);
-void master_startMidiLearn (int param);
+void master_clearMidiLearn(int param);
+void master_startMidiLearn(int param);
 void stopMidiLearn();
 #ifdef WITH_VST
-void plugin_startMidiLearn (int paramIndex, ID pluginId);
-void plugin_clearMidiLearn (int param, ID pluginId);
+void plugin_startMidiLearn(int paramIndex, ID pluginId);
+void plugin_clearMidiLearn(int param, ID pluginId);
 #endif
 
 /* Master functions. */
 
 void master_enableMidiLearn(bool v);
 void master_setMidiFilter(int c);
-}}} // giada::c::io::
+} // namespace giada::c::io
 
 #endif

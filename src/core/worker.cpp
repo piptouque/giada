@@ -2,8 +2,6 @@
  *
  * Giada - Your Hardcore Loopmachine
  *
- * beatMeter
- *
  * -----------------------------------------------------------------------------
  *
  * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
@@ -26,79 +24,43 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include "worker.h"
+#include "utils/time.h"
 
-#include <FL/fl_draw.H>
-#include "core/const.h"
-#include "core/recManager.h"
-#include "core/mixer.h"
-#include "core/clock.h"
-#include "utils/gui.h"
-#include "beatMeter.h"
-
-
-namespace giada {
-namespace v
+namespace giada
 {
-geBeatMeter::geBeatMeter(int x, int y, int w, int h)
-: Fl_Box(x, y, w, h)
+Worker::Worker()
+: m_running(false)
 {
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-Fl_Color geBeatMeter::getCursorColor()
+Worker::~Worker()
 {
-	if (m::clock::getStatus() == ClockStatus::WAITING && u::gui::shouldBlink())
-		return FL_BACKGROUND_COLOR;
-	return G_COLOR_LIGHT_1;
+	stop();
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void geBeatMeter::refresh()
+void Worker::start(std::function<void()> f, int sleep)
 {
-	redraw();
+	m_running.store(true);
+	m_thread = std::thread([this, f, sleep]() {
+		while (m_running.load() == true)
+		{
+			f();
+			u::time::sleep(sleep);
+		}
+	});
 }
-
 
 /* -------------------------------------------------------------------------- */
 
-
-void geBeatMeter::draw()
+void Worker::stop()
 {
-	using namespace giada::m;
-
-	int cursorW = w() / G_MAX_BEATS;
-	int greyX   = clock::getBeats() * cursorW;
-
-	/* Border and background. */
-	
-	fl_rect(x(), y(), w(), h(), G_COLOR_GREY_4);
-	fl_rectf(x()+1, y()+1, w()-2, h()-2, FL_BACKGROUND_COLOR);
-
-	/* Cursor. */
-
-	fl_rectf(x() + (clock::getCurrentBeat() * cursorW) + 3, y() + 3, cursorW - 5, h() - 6, getCursorColor());	
-
-	/* Beat cells. */
-
-	fl_color(G_COLOR_GREY_4);
-	for (int i=1; i<=clock::getBeats(); i++)
-		fl_line(x()+cursorW*i, y()+1, x()+cursorW*i, y()+h()-2);
-
-	/* Bar line. */
-
-	fl_color(G_COLOR_LIGHT_1);
-	int delta = clock::getBeats() / clock::getBars();
-	for (int i=1; i<clock::getBars(); i++)
-		fl_line(x()+cursorW*(i*delta), y()+1, x()+cursorW*(i*delta), y()+h()-2);
-
-	/* Unused grey area. */
-
-	fl_rectf(x()+greyX+1, y()+1, w()-greyX-1,  h()-2, G_COLOR_GREY_4);
+	m_running.store(false);
+	if (m_thread.joinable())
+		m_thread.join();
 }
-}} // giada::v::
+} // namespace giada

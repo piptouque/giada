@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -27,44 +27,42 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <FL/fl_draw.H>
-#include "core/const.h"
 #include "statusButton.h"
+#include "core/const.h"
+#include <FL/fl_draw.H>
 
-
+namespace giada::v
+{
 geStatusButton::geStatusButton(int x, int y, int w, int h, const char** imgOff,
-	const char** imgOn, const char** imgDisabled)
-: geButton(x, y, w, h, "", imgOff, imgOn, imgDisabled),
-  m_status(false)
+    const char** imgOn, const char** imgDisabled)
+: geButton(x, y, w, h, "", imgOff, imgOn, imgDisabled)
+, m_status(false)
 {
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void geStatusButton::draw()
 {
 	if (active())
-		if (m_status) geButton::draw(imgOn,  bgColor1, txtColor);
-		else          geButton::draw(imgOff, bgColor0, txtColor);
+		if (m_status)
+			geButton::draw(imgOn, bgColor1, txtColor);
+		else
+			geButton::draw(imgOff, bgColor0, txtColor);
 	else
 		geButton::draw(imgDisabled, bgColor0, bdColor);
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void geStatusButton::setStatus(bool s)
 {
-    m_status = s;
-    redraw();
+	m_status = s;
+	redraw();
 }
-
 
 bool geStatusButton::getStatus() const
 {
-    return m_status;
+	return m_status;
 }
+} // namespace giada::v

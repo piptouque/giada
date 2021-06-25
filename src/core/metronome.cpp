@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,22 +24,31 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include "metronome.h"
+#include "core/audioBuffer.h"
 
-#ifndef GE_RADIO_H
-#define GE_RADIO_H
-
-
-#include <FL/Fl_Radio_Button.H>
-
-
-class geRadio : public Fl_Radio_Button
+namespace giada::m
 {
-public:
+void Metronome::trigger(Click c, Frame o)
+{
+	m_rendering = true;
+	m_click     = c;
+	m_offset    = o;
+}
 
-	geRadio(int x, int y, int w, int h, const char *l=0);
+/* -------------------------------------------------------------------------- */
 
-	void draw() override;
-};
-
-
-#endif
+void Metronome::render(AudioBuffer& outBuf)
+{
+	const float* data = m_click == Click::BEAT ? beat : bar;
+	for (Frame f = m_offset; f < outBuf.countFrames() && m_rendering; f++)
+	{
+		for (int c = 0; c < outBuf.countChannels(); c++)
+			outBuf[f][c] += data[m_tracker];
+		m_tracker = (m_tracker + 1) % CLICK_SIZE;
+		if (m_tracker == 0)
+			m_rendering = false;
+	}
+	m_offset = 0;
+}
+} // namespace giada::m

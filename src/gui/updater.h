@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,17 +24,13 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_V_UPDATER_H
 #define G_V_UPDATER_H
 
-
-namespace giada {
-namespace v {
-namespace updater
+namespace giada::v::updater
 {
+void init();
 void update(void* p);
-}}} // giada::v::updater
-
+} // namespace giada::v::updater
 
 #endif

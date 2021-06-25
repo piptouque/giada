@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,13 +24,10 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_RING_BUFFER_H
 #define G_RING_BUFFER_H
 
-
 #include <array>
-
 
 namespace giada
 {
@@ -45,12 +42,12 @@ public:
 	using iterator       = typename std::array<T, S>::iterator;
 	using const_iterator = typename std::array<T, S>::const_iterator;
 
-	iterator       begin()        { return m_data.begin(); }
-	iterator       end()          { return m_data.begin() + m_end; }
-	const_iterator begin()  const { return m_data.begin(); }
-	const_iterator end()    const { return m_data.begin() + m_end; }
+	iterator       begin() { return m_data.begin(); }
+	iterator       end() { return m_data.begin() + m_end; }
+	const_iterator begin() const { return m_data.begin(); }
+	const_iterator end() const { return m_data.begin() + m_end; }
 	const_iterator cbegin() const { return m_data.begin(); }
-	const_iterator cend()   const { return m_data.begin() + m_end; }
+	const_iterator cend() const { return m_data.begin() + m_end; }
 
 	void clear()
 	{
@@ -62,25 +59,20 @@ public:
 	void push_back(T t)
 	{
 		m_data[m_index] = t;
-		m_index = (m_index + 1) % m_data.size(); // Wraps around at m_data.size() 
-		m_end   = std::max(m_index, m_end);      // Points to the greater index
+		m_index         = (m_index + 1) % m_data.size(); // Wraps around at m_data.size()
+		m_end           = std::max(m_index, m_end);      // Points to the greater index
 	}
 
-	constexpr std::size_t size() const noexcept
+	std::size_t size() const noexcept
 	{
-		return m_data.size();
+		return m_end;
 	}
 
-private:
-
+  private:
 	std::array<T, S> m_data;
 	std::size_t      m_index = 0;
 	std::size_t      m_end   = 0;
 };
-} // giada::
-
+} // namespace giada
 
 #endif
-
-
-

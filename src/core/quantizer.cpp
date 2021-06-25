@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,38 +24,27 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <cassert>
-#include "core/clock.h"
 #include "quantizer.h"
+#include "core/clock.h"
+#include <cassert>
 
-
-namespace giada {
-namespace m
+namespace giada::m
 {
 void Quantizer::trigger(int id)
 {
-	assert(id >= 0);
-	assert(id < (int) m_callbacks.size());
+	assert(m_callbacks.count(id) > 0); // Make sure id exists
 
 	m_performId = id;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void Quantizer::schedule(int id, std::function<void(Frame delta)> f)
 {
-	assert(id >= 0);
-	assert(id < (int) m_callbacks.size());
-
 	m_callbacks[id] = f;
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void Quantizer::advance(Range<Frame> block, Frame quantizerStep)
 {
@@ -64,34 +53,31 @@ void Quantizer::advance(Range<Frame> block, Frame quantizerStep)
 	if (m_performId == -1)
 		return;
 
-	assert(m_callbacks[m_performId] != nullptr);
+	assert(m_callbacks.count(m_performId) > 0);
 
-	for (Frame global = block.getBegin(), local = 0; global < block.getEnd(); global++, local++) {
+	for (Frame global = block.getBegin(), local = 0; global < block.getEnd(); global++, local++)
+	{
 
-		if (global % quantizerStep != 0) // Skip if it's not on a quantization unit. 
+		if (global % quantizerStep != 0) // Skip if it's not on a quantization unit.
 			continue;
 
-		m_callbacks[m_performId](local);
+		m_callbacks.at(m_performId)(local);
 		m_performId = -1;
 		return;
 	}
 }
 
-
 /* -------------------------------------------------------------------------- */
-
 
 void Quantizer::clear()
 {
 	m_performId = -1;
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-bool Quantizer::isTriggered() const
+bool Quantizer::hasBeenTriggered() const
 {
 	return m_performId != -1;
 }
-}} // giada::m::
+} // namespace giada::m

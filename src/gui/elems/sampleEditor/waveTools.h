@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,22 +24,21 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_WAVE_TOOLS_H
 #define GE_WAVE_TOOLS_H
 
-
 #include <FL/Fl_Scroll.H>
 
-
-namespace giada {
-namespace v 
+namespace giada::c::sampleEditor
+{
+struct Data;
+}
+namespace giada::v
 {
 class geWaveform;
 class geWaveTools : public Fl_Scroll
 {
 public:
-
 	geWaveTools(int x, int y, int w, int h);
 
 	void resize(int x, int y, int w, int h) override;
@@ -59,16 +58,14 @@ public:
 	void refresh();
 
 	const c::sampleEditor::Data& getChannelData() const { return *m_data; }
-	
+
 	v::geWaveform* waveform;
 
-private:
-
+  private:
 	void openMenu();
 
 	const c::sampleEditor::Data* m_data;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,14 +24,21 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GD_CONFIG_H
 #define GD_CONFIG_H
 
-
 #include "window.h"
 
+class geButton;
+class geCheck;
+class geInput;
+class geBox;
 
+namespace giada
+{
+namespace v
+{
+class geChoice;
 class geTabAudio;
 class geTabBehaviors;
 class geTabMidi;
@@ -39,21 +46,9 @@ class geTabMisc;
 #ifdef WITH_VST
 class geTabPlugins;
 #endif
-class geButton;
-class geCheck;
-class geInput;
-class geRadio;
-class geBox;
-
-
-namespace giada {
-namespace v 
-{
-class geChoice;
 class gdConfig : public gdWindow
 {
 public:
-
 	gdConfig(int w, int h);
 
 #ifdef WITH_VST
@@ -65,18 +60,18 @@ public:
 	geTabMidi*      tabMidi;
 	geTabMisc*      tabMisc;
 #ifdef WITH_VST
-	geTabPlugins*   tabPlugins;
+	geTabPlugins* tabPlugins;
 #endif
-	geButton*       save;
-	geButton*       cancel;
+	geButton* save;
+	geButton* cancel;
 
-private:
-
+  private:
 	static void cb_save_config(Fl_Widget* /*w*/, void* p);
 	static void cb_cancel(Fl_Widget* /*w*/, void* p);
-	void cb_save_config();
-	void cb_cancel();
+	void        cb_save_config();
+	void        cb_cancel();
 };
-}} // giada::v::
+} // namespace v
+} // namespace giada
 
 #endif

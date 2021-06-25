@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,36 +24,34 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef GE_PAN_TOOL_H
 #define GE_PAN_TOOL_H
 
-
-#include "gui/elems/basics/pack.h"
 #include "gui/elems/basics/box.h"
+#include "gui/elems/basics/button.h"
 #include "gui/elems/basics/dial.h"
 #include "gui/elems/basics/input.h"
-#include "gui/elems/basics/button.h"
+#include "gui/elems/basics/pack.h"
 
-
-namespace giada {
-namespace v 
+namespace giada::c::sampleEditor
+{
+struct Data;
+}
+namespace giada::v
 {
 class gePanTool : public gePack
 {
 public:
-
 	gePanTool(const c::sampleEditor::Data& d, int x, int y);
 
 	void rebuild(const c::sampleEditor::Data& d);
 	void update(float v);
 
-private:
-
-	static void cb_panning (Fl_Widget* /*w*/, void* p);
+  private:
+	static void cb_panning(Fl_Widget* /*w*/, void* p);
 	static void cb_panReset(Fl_Widget* /*w*/, void* p);
-	void cb_panning();
-	void cb_panReset();
+	void        cb_panning();
+	void        cb_panReset();
 
 	const c::sampleEditor::Data* m_data;
 
@@ -62,7 +60,6 @@ private:
 	geInput  m_input;
 	geButton m_reset;
 };
-}} // giada::v::
-
+} // namespace giada::v
 
 #endif

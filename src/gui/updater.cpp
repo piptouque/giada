@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,32 +24,34 @@
  *
  * -------------------------------------------------------------------------- */
 
-
-#include <FL/Fl.H>
+#include "updater.h"
 #include "core/const.h"
 #include "core/model/model.h"
 #include "utils/gui.h"
-#include "updater.h"
+#include <FL/Fl.H>
 
-
-namespace giada {
-namespace v {
-namespace updater
+namespace giada::v::updater
 {
+void init()
+{
+	m::model::onSwap([](m::model::SwapType type) {
+		if (type == m::model::SwapType::NONE)
+			return;
+
+		/* This callback is fired by the updater thread, so it requires
+		synchronization with the main one. */
+
+		Fl::lock();
+		type == m::model::SwapType::HARD ? u::gui::rebuild() : u::gui::refresh();
+		Fl::unlock();
+	});
+}
+
+/* -------------------------------------------------------------------------- */
+
 void update(void* /*p*/)
 {
-	if (m::model::waves.changed.load()    == true ||
-		m::model::actions.changed.load()  == true ||
-		m::model::channels.changed.load()  == true)
-	{
-		u::gui::rebuild();
-		m::model::waves.changed.store(false);
-		m::model::actions.changed.store(false);
-		m::model::channels.changed.store(false);
-	}
-	else
-		u::gui::refresh();
-
+	u::gui::refresh();
 	Fl::add_timeout(G_GUI_REFRESH_RATE, update, nullptr);
 }
-}}} // giada::v::updater
+} // namespace giada::v::updater

@@ -4,7 +4,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (C) 2010-2020 Giovanni A. Zuliani | Monocasual
+ * Copyright (C) 2010-2021 Giovanni A. Zuliani | Monocasual
  *
  * This file is part of Giada - Your Hardcore Loopmachine.
  *
@@ -24,39 +24,29 @@
  *
  * -------------------------------------------------------------------------- */
 
-
 #ifndef G_CHANNEL_MIDI_CONTROLLER_H
 #define G_CHANNEL_MIDI_CONTROLLER_H
 
-
-#include "core/types.h"
-#include "core/mixer.h"  // TODO - forward declare
-
-
-namespace giada {
-namespace m
+namespace giada::m::channel
 {
-/* MidiController
-Manages events for a MIDI Channel. */
-
-class MidiController
+struct Data;
+}
+namespace giada::m::eventDispatcher
 {
-public:
-
-    MidiController(ChannelState*);
-    MidiController(const MidiController&, ChannelState* c=nullptr);
-
-    void parse(const mixer::Event& e) const;
-
-private:
-
-    void press() const;
-    void kill() const;
-    void onFirstBeat() const;
-    
-    ChannelState* m_channelState;
+struct Event;
+}
+namespace giada::m::sequencer
+{
+struct Event;
+}
+namespace giada::m::midiController
+{
+struct Data
+{
 };
-}} // giada::m::
 
+void react(channel::Data& ch, const eventDispatcher::Event& e);
+void advance(const channel::Data& ch, const sequencer::Event& e);
+} // namespace giada::m::midiController
 
 #endif
